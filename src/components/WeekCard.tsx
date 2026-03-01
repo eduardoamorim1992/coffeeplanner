@@ -1,0 +1,176 @@
+import { useState } from "react";
+import { CheckCircle2, Circle, Trash2 } from "lucide-react";
+
+interface WeekCardProps {
+  day: {
+    dateISO: string;
+    dayName: string;
+    date: string;
+    tasks: any[];
+  };
+  isToday: boolean;
+  index: number;
+  onToggleTask: (taskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
+  onAddTask: (
+    title: string,
+    priority: "alta" | "media" | "baixa"
+  ) => void;
+}
+
+export function WeekCard({
+  day,
+  isToday,
+  index,
+  onToggleTask,
+  onDeleteTask,
+  onAddTask,
+}: WeekCardProps) {
+  const [newTask, setNewTask] = useState("");
+  const [priority, setPriority] =
+    useState<"alta" | "media" | "baixa">("media");
+
+  const completedCount = day.tasks.filter(
+    (t) => t.completed
+  ).length;
+
+  const totalCount = day.tasks.length;
+
+  const progress =
+    totalCount > 0
+      ? (completedCount / totalCount) * 100
+      : 0;
+
+  const priorityColors = {
+    alta: "text-red-500",
+    media: "text-blue-500",
+    baixa: "text-gray-400",
+  };
+
+  return (
+    <div
+      className={`glass-card flex flex-col min-w-[250px] flex-1 transition-all duration-300 ${
+        isToday ? "border-primary/50 glow-red" : ""
+      }`}
+      style={{ animationDelay: `${index * 60}ms` }}
+    >
+      {/* HEADER */}
+      <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
+        <div>
+          <p className="text-sm font-semibold capitalize">
+            {day.dayName}
+          </p>
+          <p className="text-xs text-muted-foreground font-mono">
+            {day.date}
+          </p>
+        </div>
+
+        {totalCount > 0 && (
+          <div className="text-xs font-mono text-muted-foreground">
+            {Math.round(progress)}%
+          </div>
+        )}
+      </div>
+
+      {/* TASKS */}
+      <div className="px-4 py-3 flex-1 space-y-2">
+        {day.tasks.map((task) => (
+          <div
+            key={task.id}
+            className="flex items-center justify-between group"
+          >
+            <button
+              onClick={() =>
+                onToggleTask(task.id)
+              }
+              className="flex items-center gap-2 text-xs"
+            >
+              {task.completed ? (
+                <CheckCircle2 className="w-4 h-4 text-green-500" />
+              ) : (
+                <Circle
+                  className={`w-4 h-4 ${priorityColors[task.priority]}`}
+                />
+              )}
+
+              <span
+                className={`${
+                  task.completed
+                    ? "line-through text-muted-foreground"
+                    : ""
+                }`}
+              >
+                {task.title}
+              </span>
+            </button>
+
+            <button
+              onClick={() =>
+                onDeleteTask(task.id)
+              }
+              className="opacity-0 group-hover:opacity-100 transition"
+            >
+              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+            </button>
+          </div>
+        ))}
+
+        {/* ADD TASK */}
+        <div className="flex flex-col gap-2 pt-2">
+          <input
+            type="text"
+            value={newTask}
+            onChange={(e) =>
+              setNewTask(e.target.value)
+            }
+            placeholder="Nova atividade..."
+            className="text-xs px-2 py-1 rounded bg-muted/30 border border-border"
+          />
+
+          <select
+            value={priority}
+            onChange={(e) =>
+              setPriority(
+                e.target.value as
+                  | "alta"
+                  | "media"
+                  | "baixa"
+              )
+            }
+            className="text-xs px-2 py-1 rounded bg-muted/30 border border-border"
+          >
+            <option value="alta">
+              Alta prioridade
+            </option>
+            <option value="media">
+              Média prioridade
+            </option>
+            <option value="baixa">
+              Baixa prioridade
+            </option>
+          </select>
+
+          <button
+            onClick={() => {
+              if (!newTask.trim()) return;
+              onAddTask(newTask, priority);
+              setNewTask("");
+            }}
+            className="text-xs px-2 py-1 rounded bg-primary text-white hover:opacity-90 transition"
+          >
+            Adicionar
+          </button>
+        </div>
+      </div>
+
+      {/* FOOTER */}
+      {totalCount > 0 && (
+        <div className="px-4 py-2 border-t border-border/30">
+          <p className="text-[10px] text-muted-foreground font-mono">
+            {completedCount}/{totalCount} concluídas
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
