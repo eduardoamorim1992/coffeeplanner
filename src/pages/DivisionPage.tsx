@@ -5,7 +5,7 @@ import { MonthlyView } from "@/components/MonthlyView";
 import { MonthlyChart } from "@/components/MonthlyChart";
 import { MotivationalBar } from "@/components/MotivationalBar";
 import { AppHeader } from "@/components/AppHeader";
-import  AppSidebar  from "@/components/AppSidebar";
+import AppSidebar from "@/components/AppSidebar";
 import { useEffect, useState } from "react";
 
 function formatDateLocal(date: Date) {
@@ -53,24 +53,24 @@ export default function DivisionPage() {
   }, [calendarData]);
 
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen overflow-hidden bg-background">
       {/* Sidebar */}
       <AppSidebar />
 
       {/* Conteúdo */}
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
         <AppHeader divisionName={division.name} />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
-
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+          
           {/* Frases motivacionais */}
           <MotivationalBar />
 
           {/* Botões de visualização */}
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             <button
               onClick={() => setViewMode("month")}
-              className={`px-4 py-2 rounded ${
+              className={`px-4 py-2 rounded transition ${
                 viewMode === "month"
                   ? "bg-primary text-white"
                   : "bg-muted"
@@ -81,7 +81,7 @@ export default function DivisionPage() {
 
             <button
               onClick={() => setViewMode("week")}
-              className={`px-4 py-2 rounded ${
+              className={`px-4 py-2 rounded transition ${
                 viewMode === "week"
                   ? "bg-primary text-white"
                   : "bg-muted"
@@ -93,9 +93,10 @@ export default function DivisionPage() {
 
           {/* Renderização */}
           {viewMode === "month" ? (
-            <div className="flex gap-8 items-start">
+            <div className="flex flex-col xl:flex-row gap-8 items-start">
+              
               {/* Calendário */}
-              <div className="flex-1">
+              <div className="flex-1 w-full">
                 <MonthlyView
                   calendarData={calendarData}
                   onSelectDate={(date) => {
@@ -106,7 +107,7 @@ export default function DivisionPage() {
               </div>
 
               {/* Gráfico executivo */}
-              <div className="w-[450px]">
+              <div className="w-full xl:w-[450px]">
                 <MonthlyChart
                   calendarData={calendarData}
                 />
