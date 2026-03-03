@@ -12,20 +12,19 @@ import {
   FlaskConical,
 } from "lucide-react";
 
-export function AppSidebar() {
+export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
   const user = JSON.parse(
-    localStorage.getItem("user") || "null"
+    localStorage.getItem("user_profile") || "null"
   );
 
   const handleLogout = () => {
-    localStorage.removeItem("user");
+    localStorage.removeItem("user_profile");
     navigate("/login");
   };
 
-  // 🔥 MAPEAMENTO DE ÍCONES POR DIVISÃO
   const divisionIcons: Record<string, any> = {
     central: Factory,
     "gestao-de-pneus": Wrench,
@@ -35,14 +34,6 @@ export function AppSidebar() {
     coordenacao: Users,
     "laboratorio-de-oleo": FlaskConical,
   };
-
-  // 🔐 FILTRO DE DIVISÕES
-  const visibleDivisions =
-    user?.role === "coordenador"
-      ? divisions
-      : divisions.filter(
-          (d) => d.id === user?.role
-        );
 
   return (
     <aside className="w-64 bg-zinc-950 border-r border-zinc-800 flex flex-col justify-between">
@@ -54,8 +45,8 @@ export function AppSidebar() {
 
         <div className="p-4 space-y-2">
 
-          {/* DASHBOARD EXECUTIVO (APENAS COORDENADOR) */}
-          {user?.role === "coordenador" && (
+          {/* DASHBOARD */}
+          {(user?.role === "admin" || user?.role === "coordenador") && (
             <button
               onClick={() => navigate("/dashboard")}
               className={`flex items-center gap-2 w-full px-3 py-2 rounded text-sm transition ${
@@ -69,33 +60,48 @@ export function AppSidebar() {
             </button>
           )}
 
-          {/* LISTA DE DIVISÕES */}
-          {visibleDivisions.map((division) => {
-            const Icon =
-              divisionIcons[division.id] || Factory;
+          {/* TODAS AS DIVISÕES PARA ADMIN/COORDENADOR */}
+          {(user?.role === "admin" || user?.role === "coordenador") &&
+            divisions.map((division) => {
+              const Icon =
+                divisionIcons[division.id] || Factory;
 
-            return (
+              return (
+                <button
+                  key={division.id}
+                  onClick={() =>
+                    navigate(`/${division.id}`)
+                  }
+                  className={`flex items-center gap-2 w-full px-3 py-2 rounded text-sm transition ${
+                    location.pathname ===
+                    `/${division.id}`
+                      ? "bg-red-600 text-white"
+                      : "text-zinc-400 hover:bg-zinc-800"
+                  }`}
+                >
+                  <Icon size={16} />
+                  {division.name}
+                </button>
+              );
+            })}
+
+          {/* USUÁRIO NORMAL SÓ VÊ SUA DIVISÃO */}
+          {user?.division_id &&
+            user.role !== "admin" &&
+            user.role !== "coordenador" && (
               <button
-                key={division.id}
                 onClick={() =>
-                  navigate(`/${division.id}`)
+                  navigate(`/${user.division_id}`)
                 }
-                className={`flex items-center gap-2 w-full px-3 py-2 rounded text-sm transition ${
-                  location.pathname ===
-                  `/${division.id}`
-                    ? "bg-red-600 text-white"
-                    : "text-zinc-400 hover:bg-zinc-800"
-                }`}
+                className="flex items-center gap-2 w-full px-3 py-2 rounded text-sm bg-red-600 text-white"
               >
-                <Icon size={16} />
-                {division.name}
+                <Factory size={16} />
+                Minha Divisão
               </button>
-            );
-          })}
+            )}
         </div>
       </div>
 
-      {/* LOGOUT */}
       <div className="p-4 border-t border-zinc-800">
         <button
           onClick={handleLogout}

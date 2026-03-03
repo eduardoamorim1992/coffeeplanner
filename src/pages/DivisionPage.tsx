@@ -5,7 +5,7 @@ import { MonthlyView } from "@/components/MonthlyView";
 import { MonthlyChart } from "@/components/MonthlyChart";
 import { MotivationalBar } from "@/components/MotivationalBar";
 import { AppHeader } from "@/components/AppHeader";
-import { AppSidebar } from "@/components/AppSidebar";
+import  AppSidebar  from "@/components/AppSidebar";
 import { useEffect, useState } from "react";
 
 function formatDateLocal(date: Date) {

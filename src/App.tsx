@@ -10,34 +10,44 @@ import DivisionPage from "@/pages/DivisionPage";
 import Dashboard from "@/components/Dashboard";
 import Login from "@/pages/Login";
 
-function PrivateRoute({ children }: any) {
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+function getUser() {
+  return JSON.parse(localStorage.getItem("user_profile") || "null");
+}
 
-  if (!user) return <Navigate to="/login" />;
+function PrivateRoute({ children }: any) {
+  const user = getUser();
+
+  if (!user) return <Navigate to="/login" replace />;
 
   return children;
 }
 
 function ProtectedDivision() {
   const { divisionId } = useParams();
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const user = getUser();
 
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" replace />;
 
-  if (user.role !== "coordenador" && user.role !== divisionId) {
-    return <Navigate to={`/${user.role}`} />;
+  // Admin acessa qualquer divisão
+  if (user.role === "admin" || user.role === "coordenador") {
+    return <DivisionPage />;
+  }
+
+  // Usuário normal só acessa sua divisão
+  if (String(user.division_id) !== String(divisionId)) {
+    return <Navigate to={`/${user.division_id}`} replace />;
   }
 
   return <DivisionPage />;
 }
 
 function ProtectedDashboard() {
-  const user = JSON.parse(localStorage.getItem("user") || "null");
+  const user = getUser();
 
-  if (!user) return <Navigate to="/login" />;
+  if (!user) return <Navigate to="/login" replace />;
 
-  if (user.role !== "coordenador") {
-    return <Navigate to={`/${user.role}`} />;
+  if (user.role !== "admin" && user.role !== "coordenador") {
+    return <Navigate to={`/${user.division_id}`} replace />;
   }
 
   return <Dashboard />;
@@ -49,7 +59,6 @@ export default function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
 
-        {/* DASHBOARD EXECUTIVO */}
         <Route
           path="/dashboard"
           element={
@@ -59,7 +68,6 @@ export default function App() {
           }
         />
 
-        {/* DIVISÕES */}
         <Route
           path="/:divisionId"
           element={
@@ -69,7 +77,7 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/login" />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     </BrowserRouter>
   );

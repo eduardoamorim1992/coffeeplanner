@@ -1,7 +1,7 @@
 import { divisions } from "@/data/mockData";
 import { RankingBoard } from "@/components/RankingBoard";
 import { AlertsPanel } from "@/components/AlertsPanel";
-import { AppSidebar } from "@/components/AppSidebar";
+import  AppSidebar  from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
 import { useEffect, useState } from "react";
 
