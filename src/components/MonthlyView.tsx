@@ -36,12 +36,10 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
 
   const days: (string | null)[] = [];
 
-  // Espaços vazios antes do início do mês
   for (let i = 0; i < startWeekDay; i++) {
     days.push(null);
   }
 
-  // Dias do mês
   for (let d = 1; d <= totalDays; d++) {
     const dateObj = new Date(currentYear, currentMonth, d);
     days.push(formatDateLocal(dateObj));
@@ -108,12 +106,27 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
           }
 
           const tasks = calendarData[date] || [];
-          const tasksCount = tasks.length;
 
-          const hasHighPriority = tasks.some(
+          // 🔥 Contagem por prioridade (somente pendentes)
+          const high = tasks.filter(
             (task) =>
-              task.priority === "alta" && !task.completed
-          );
+              task.priority === "alta" &&
+              !task.completed
+          ).length;
+
+          const medium = tasks.filter(
+            (task) =>
+              task.priority === "media" &&
+              !task.completed
+          ).length;
+
+          const low = tasks.filter(
+            (task) =>
+              task.priority === "baixa" &&
+              !task.completed
+          ).length;
+
+          const hasHighPriority = high > 0;
 
           return (
             <div
@@ -131,20 +144,43 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
                 {Number(date.split("-")[2])}
               </div>
 
-              {/* Indicador quantidade de tarefas */}
-              {tasksCount > 0 && (
-                <div className="mt-2 flex items-center gap-1">
-                  <div className="w-2 h-2 bg-red-500 rounded-full" />
-                  <span className="text-xs">
-                    {tasksCount}
-                  </span>
-                </div>
-              )}
+              {/* Indicadores */}
+              {(high > 0 || medium > 0 || low > 0) && (
+                <div className="mt-2 space-y-1 text-xs">
 
-              {/* Alta prioridade */}
-              {hasHighPriority && (
-                <div className="mt-1 text-[10px] text-red-400 font-semibold">
-                  Alta prioridade
+                  {/* Linha das quantidades */}
+                  <div className="flex items-center gap-3">
+                    
+                    {high > 0 && (
+                      <div className="flex items-center gap-1 text-red-500">
+                        <div className="w-2 h-2 bg-red-500 rounded-full" />
+                        <span>{high}</span>
+                      </div>
+                    )}
+
+                    {medium > 0 && (
+                      <div className="flex items-center gap-1 text-blue-500">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                        <span>{medium}</span>
+                      </div>
+                    )}
+
+                    {low > 0 && (
+                      <div className="flex items-center gap-1 text-gray-400">
+                        <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                        <span>{low}</span>
+                      </div>
+                    )}
+
+                  </div>
+
+                  {/* Texto apenas se houver alta */}
+                  {high > 0 && (
+                    <div className="text-[10px] text-red-400 font-semibold">
+                      Alta prioridade
+                    </div>
+                  )}
+
                 </div>
               )}
             </div>

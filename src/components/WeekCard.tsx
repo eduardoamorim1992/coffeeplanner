@@ -1,11 +1,15 @@
 import { useState } from "react";
-import { CheckCircle2, Circle, Trash2 } from "lucide-react";
+import {
+  CheckCircle2,
+  Circle,
+  Trash2,
+  Repeat,
+} from "lucide-react";
 
 interface WeekCardProps {
   day: {
-    dateISO: string;
-    dayName: string;
     date: string;
+    dayName: string;
     tasks: any[];
   };
   isToday: boolean;
@@ -16,6 +20,7 @@ interface WeekCardProps {
     title: string,
     priority: "alta" | "media" | "baixa"
   ) => void;
+  onReplicateTask: (task: any) => void; // 🔥 NOVO
 }
 
 export function WeekCard({
@@ -25,6 +30,7 @@ export function WeekCard({
   onToggleTask,
   onDeleteTask,
   onAddTask,
+  onReplicateTask,
 }: WeekCardProps) {
   const [newTask, setNewTask] = useState("");
   const [priority, setPriority] =
@@ -79,39 +85,55 @@ export function WeekCard({
             key={task.id}
             className="flex items-center justify-between group"
           >
-            <button
-              onClick={() =>
-                onToggleTask(task.id)
-              }
-              className="flex items-center gap-2 text-xs"
-            >
-              {task.completed ? (
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
-              ) : (
-                <Circle
-                  className={`w-4 h-4 ${priorityColors[task.priority]}`}
-                />
-              )}
-
-              <span
-                className={`${
-                  task.completed
-                    ? "line-through text-muted-foreground"
-                    : ""
-                }`}
+            <div className="flex items-center gap-2 text-xs flex-1">
+              <button
+                onClick={() =>
+                  onToggleTask(task.id)
+                }
+                className="flex items-center gap-2"
               >
-                {task.title}
-              </span>
-            </button>
+                {task.completed ? (
+                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                ) : (
+                  <Circle
+                    className={`w-4 h-4 ${priorityColors[task.priority]}`}
+                  />
+                )}
 
-            <button
-              onClick={() =>
-                onDeleteTask(task.id)
-              }
-              className="opacity-0 group-hover:opacity-100 transition"
-            >
-              <Trash2 className="w-3.5 h-3.5 text-red-500" />
-            </button>
+                <span
+                  className={`${
+                    task.completed
+                      ? "line-through text-muted-foreground"
+                      : ""
+                  }`}
+                >
+                  {task.title}
+                </span>
+              </button>
+            </div>
+
+            {/* 🔥 AÇÕES */}
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
+              
+              {/* 🔁 Replicar */}
+              <button
+                onClick={() =>
+                  onReplicateTask(task)
+                }
+                title="Replicar toda semana"
+              >
+                <Repeat className="w-3.5 h-3.5 text-blue-400 hover:text-blue-300" />
+              </button>
+
+              {/* 🗑 Excluir */}
+              <button
+                onClick={() =>
+                  onDeleteTask(task.id)
+                }
+              >
+                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+              </button>
+            </div>
           </div>
         ))}
 

@@ -54,14 +54,14 @@ export default function DivisionPage() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-      {/* Sidebar */}
-      <AppSidebar />
+  {/* Sidebar */}
+  <AppSidebar />
 
-      {/* Conteúdo */}
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
-        <AppHeader divisionName={division.name} />
+  {/* Conteúdo */}
+  <div className="flex-1 flex flex-col overflow-hidden">
+    <AppHeader divisionName={division.name} />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+    <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
           
           {/* Frases motivacionais */}
           <MotivationalBar />

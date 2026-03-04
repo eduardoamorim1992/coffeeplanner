@@ -9,9 +9,13 @@ import {
 import DivisionPage from "@/pages/DivisionPage";
 import Dashboard from "@/components/Dashboard";
 import Login from "@/pages/Login";
+import AdminUsers from "@/pages/AdminUsers";
+import AlterarSenha from "@/pages/AlterarSenha";
 
 function getUser() {
-  return JSON.parse(localStorage.getItem("user_profile") || "null");
+  return JSON.parse(
+    localStorage.getItem("user_profile") || "null"
+  );
 }
 
 function PrivateRoute({ children }: any) {
@@ -28,14 +32,25 @@ function ProtectedDivision() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  // Admin acessa qualquer divisão
-  if (user.role === "admin" || user.role === "coordenador") {
+  // Admin e coordenador acessam qualquer divisão
+  if (
+    user.role === "admin" ||
+    user.role === "coordenador"
+  ) {
     return <DivisionPage />;
   }
 
   // Usuário normal só acessa sua divisão
-  if (String(user.division_id) !== String(divisionId)) {
-    return <Navigate to={`/${user.division_id}`} replace />;
+  if (
+    String(user.division_id) !==
+    String(divisionId)
+  ) {
+    return (
+      <Navigate
+        to={`/${user.division_id}`}
+        replace
+      />
+    );
   }
 
   return <DivisionPage />;
@@ -46,19 +61,46 @@ function ProtectedDashboard() {
 
   if (!user) return <Navigate to="/login" replace />;
 
-  if (user.role !== "admin" && user.role !== "coordenador") {
-    return <Navigate to={`/${user.division_id}`} replace />;
+  if (
+    user.role !== "admin" &&
+    user.role !== "coordenador"
+  ) {
+    return (
+      <Navigate
+        to={`/${user.division_id}`}
+        replace
+      />
+    );
   }
 
   return <Dashboard />;
+}
+
+function ProtectedAdmin() {
+  const user = getUser();
+
+  if (!user) return <Navigate to="/login" replace />;
+
+  if (user.role !== "admin") {
+    return (
+      <Navigate
+        to={`/${user.division_id}`}
+        replace
+      />
+    );
+  }
+
+  return <AdminUsers />;
 }
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* LOGIN */}
         <Route path="/login" element={<Login />} />
 
+        {/* DASHBOARD */}
         <Route
           path="/dashboard"
           element={
@@ -68,6 +110,24 @@ export default function App() {
           }
         />
 
+        {/* 🔥 ROTA ADMIN (TEM QUE VIR ANTES DE /:divisionId) */}
+        <Route
+          path="/admin/users"
+          element={
+            <PrivateRoute>
+              <ProtectedAdmin />
+            </PrivateRoute>
+          }
+        /><Route
+  path="/alterar-senha"
+  element={
+    <PrivateRoute>
+      <AlterarSenha />
+    </PrivateRoute>
+  }
+/>
+
+        {/* DIVISÕES */}
         <Route
           path="/:divisionId"
           element={
@@ -77,7 +137,11 @@ export default function App() {
           }
         />
 
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        {/* FALLBACK */}
+        <Route
+          path="*"
+          element={<Navigate to="/login" replace />}
+        />
       </Routes>
     </BrowserRouter>
   );

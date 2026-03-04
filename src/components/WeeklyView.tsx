@@ -93,6 +93,54 @@ export function WeeklyView({
     }));
   }
 
+  // 🔥 REPLICAR EM TODAS AS MESMAS SEMANAS DO MÊS
+  function replicateTaskWeekly(
+    task: any,
+    baseDate: string
+  ) {
+    const base = parseLocalDate(baseDate);
+    const targetWeekDay = base.getDay();
+    const month = base.getMonth();
+    const year = base.getFullYear();
+
+    setCalendarData((prev) => {
+      const newCalendar = { ...prev };
+
+      const daysInMonth = new Date(
+        year,
+        month + 1,
+        0
+      ).getDate();
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const current = new Date(year, month, day);
+
+        if (current.getDay() === targetWeekDay) {
+          const formatted = formatDateLocal(current);
+
+          if (!newCalendar[formatted]) {
+            newCalendar[formatted] = [];
+          }
+
+          const alreadyExists =
+            newCalendar[formatted].some(
+              (t: any) => t.title === task.title
+            );
+
+          if (!alreadyExists) {
+            newCalendar[formatted].push({
+              ...task,
+              id: crypto.randomUUID(),
+              completed: false,
+            });
+          }
+        }
+      }
+
+      return newCalendar;
+    });
+  }
+
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
       {week.map((day, i) => (
@@ -109,6 +157,9 @@ export function WeeklyView({
           }
           onAddTask={(title, priority) =>
             addTask(day.date, title, priority)
+          }
+          onReplicateTask={(task) =>
+            replicateTaskWeekly(task, day.date)
           }
         />
       ))}
