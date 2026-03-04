@@ -15,7 +15,9 @@ function formatDateLocal(date: Date) {
 }
 
 export default function DivisionPage() {
+
   const { divisionId } = useParams<{ divisionId: string }>();
+
   const division = getDivision(divisionId || "central");
 
   if (!division) return <Navigate to="/central" replace />;
@@ -34,40 +36,44 @@ export default function DivisionPage() {
     formatDateLocal(new Date())
   );
 
-  // 🔹 Carregar dados
+  // 🔹 carregar dados da memória
   useEffect(() => {
+
     const saved = localStorage.getItem(storageKey);
+
     if (saved) {
       setCalendarData(JSON.parse(saved));
     } else {
       setCalendarData({});
     }
+
   }, [division.id]);
 
-  // 🔹 Salvar automaticamente
+  // 🔹 salvar automaticamente na memória
   useEffect(() => {
+
     localStorage.setItem(
       storageKey,
       JSON.stringify(calendarData)
     );
+
   }, [calendarData]);
 
   return (
     <div className="flex h-screen overflow-hidden bg-background">
-  {/* Sidebar */}
-  <AppSidebar />
 
-  {/* Conteúdo */}
-  <div className="flex-1 flex flex-col overflow-hidden">
-    <AppHeader divisionName={division.name} />
+      <AppSidebar />
 
-    <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
-          
-          {/* Frases motivacionais */}
+      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
+
+        <AppHeader divisionName={division.name} />
+
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+
           <MotivationalBar />
 
-          {/* Botões de visualização */}
           <div className="flex flex-wrap gap-3">
+
             <button
               onClick={() => setViewMode("month")}
               className={`px-4 py-2 rounded transition ${
@@ -89,13 +95,13 @@ export default function DivisionPage() {
             >
               Semana
             </button>
+
           </div>
 
-          {/* Renderização */}
           {viewMode === "month" ? (
+
             <div className="flex flex-col xl:flex-row gap-8 items-start">
-              
-              {/* Calendário */}
+
               <div className="flex-1 w-full">
                 <MonthlyView
                   calendarData={calendarData}
@@ -106,21 +112,24 @@ export default function DivisionPage() {
                 />
               </div>
 
-              {/* Gráfico executivo */}
               <div className="w-full xl:w-[450px]">
-                <MonthlyChart
-                  calendarData={calendarData}
-                />
+                <MonthlyChart calendarData={calendarData} />
               </div>
+
             </div>
+
           ) : (
+
             <WeeklyView
               calendarData={calendarData}
               setCalendarData={setCalendarData}
               selectedDate={selectedDate}
             />
+
           )}
+
         </main>
+
       </div>
     </div>
   );

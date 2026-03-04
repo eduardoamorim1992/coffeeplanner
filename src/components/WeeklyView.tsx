@@ -11,10 +11,17 @@ function formatDateLocal(date: Date) {
   ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
+interface Task {
+  id: string;
+  title: string;
+  completed: boolean;
+  priority: "alta" | "media" | "baixa";
+}
+
 interface Props {
-  calendarData: Record<string, any[]>;
+  calendarData: Record<string, Task[]>;
   setCalendarData: React.Dispatch<
-    React.SetStateAction<Record<string, any[]>>
+    React.SetStateAction<Record<string, Task[]>>
   >;
   selectedDate: string;
 }
@@ -24,6 +31,7 @@ export function WeeklyView({
   setCalendarData,
   selectedDate,
 }: Props) {
+
   const baseDate = parseLocalDate(selectedDate);
 
   const monday = new Date(baseDate);
@@ -31,7 +39,12 @@ export function WeeklyView({
     baseDate.getDate() - ((baseDate.getDay() + 6) % 7)
   );
 
-  const week = [];
+  const week: {
+    date: string;
+    dayName: string;
+    tasks: Task[];
+    notes: string;
+  }[] = [];
 
   for (let i = 0; i < 7; i++) {
     const d = new Date(monday);
@@ -49,11 +62,11 @@ export function WeeklyView({
     });
   }
 
-  // ✅ CONCLUIR TAREFA
+  // CONCLUIR TAREFA
   function toggleTask(dayDate: string, taskId: string) {
     setCalendarData((prev) => ({
       ...prev,
-      [dayDate]: prev[dayDate].map((task: any) =>
+      [dayDate]: (prev[dayDate] || []).map((task) =>
         task.id === taskId
           ? { ...task, completed: !task.completed }
           : task
@@ -61,22 +74,23 @@ export function WeeklyView({
     }));
   }
 
-  // ✅ EXCLUIR TAREFA
+  // EXCLUIR TAREFA
   function deleteTask(dayDate: string, taskId: string) {
     setCalendarData((prev) => ({
       ...prev,
-      [dayDate]: prev[dayDate].filter(
-        (task: any) => task.id !== taskId
+      [dayDate]: (prev[dayDate] || []).filter(
+        (task) => task.id !== taskId
       ),
     }));
   }
 
-  // ✅ ADICIONAR TAREFA
+  // ADICIONAR TAREFA
   function addTask(
     dayDate: string,
     title: string,
     priority: "alta" | "media" | "baixa"
   ) {
+
     if (!title.trim()) return;
 
     setCalendarData((prev) => ({
@@ -93,17 +107,19 @@ export function WeeklyView({
     }));
   }
 
-  // 🔥 REPLICAR EM TODAS AS MESMAS SEMANAS DO MÊS
+  // REPLICAR EM TODAS AS MESMAS SEMANAS DO MÊS
   function replicateTaskWeekly(
-    task: any,
+    task: Task,
     baseDate: string
   ) {
+
     const base = parseLocalDate(baseDate);
     const targetWeekDay = base.getDay();
     const month = base.getMonth();
     const year = base.getFullYear();
 
     setCalendarData((prev) => {
+
       const newCalendar = { ...prev };
 
       const daysInMonth = new Date(
@@ -113,9 +129,11 @@ export function WeeklyView({
       ).getDate();
 
       for (let day = 1; day <= daysInMonth; day++) {
+
         const current = new Date(year, month, day);
 
         if (current.getDay() === targetWeekDay) {
+
           const formatted = formatDateLocal(current);
 
           if (!newCalendar[formatted]) {
@@ -124,7 +142,7 @@ export function WeeklyView({
 
           const alreadyExists =
             newCalendar[formatted].some(
-              (t: any) => t.title === task.title
+              (t) => t.title === task.title
             );
 
           if (!alreadyExists) {
@@ -143,26 +161,35 @@ export function WeeklyView({
 
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
+
       {week.map((day, i) => (
+
         <WeekCard
           key={day.date}
           day={day}
           isToday={false}
           index={i}
+
           onToggleTask={(taskId) =>
             toggleTask(day.date, taskId)
           }
+
           onDeleteTask={(taskId) =>
             deleteTask(day.date, taskId)
           }
+
           onAddTask={(title, priority) =>
             addTask(day.date, title, priority)
           }
+
           onReplicateTask={(task) =>
             replicateTaskWeekly(task, day.date)
           }
+
         />
+
       ))}
+
     </div>
   );
 }
