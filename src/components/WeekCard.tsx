@@ -9,6 +9,7 @@ import {
 interface WeekCardProps {
   day: {
     date: string;
+    displayDate: string;
     dayName: string;
     tasks: any[];
   };
@@ -20,7 +21,7 @@ interface WeekCardProps {
     title: string,
     priority: "alta" | "media" | "baixa"
   ) => void;
-  onReplicateTask: (task: any) => void; // 🔥 NOVO
+  onReplicateTask: (task: any) => void;
 }
 
 export function WeekCard({
@@ -53,6 +54,12 @@ export function WeekCard({
     baixa: "text-gray-400",
   };
 
+  const priorityBackground = {
+    alta: "bg-red-500/10",
+    media: "bg-blue-500/10",
+    baixa: "bg-gray-500/10",
+  };
+
   return (
     <div
       className={`glass-card flex flex-col min-w-[250px] flex-1 transition-all duration-300 ${
@@ -66,8 +73,9 @@ export function WeekCard({
           <p className="text-sm font-semibold capitalize">
             {day.dayName}
           </p>
+
           <p className="text-xs text-muted-foreground font-mono">
-            {day.date}
+            {day.displayDate}
           </p>
         </div>
 
@@ -78,30 +86,47 @@ export function WeekCard({
         )}
       </div>
 
+      {/* BARRA DE PROGRESSO */}
+      {totalCount > 0 && (
+        <div className="px-4 pt-2">
+          <div className="w-full h-1.5 bg-muted/40 rounded overflow-hidden">
+            <div
+              className="h-full bg-green-500 transition-all duration-500"
+              style={{ width: `${progress}%` }}
+            />
+          </div>
+        </div>
+      )}
+
       {/* TASKS */}
       <div className="px-4 py-3 flex-1 space-y-2">
         {day.tasks.map((task) => (
           <div
             key={task.id}
-            className="flex items-center justify-between group"
+            className={`flex items-start justify-between group rounded px-2 py-1 transition
+            ${
+              task.completed
+                ? "bg-green-500/20"
+                : priorityBackground[task.priority]
+            }`}
           >
-            <div className="flex items-center gap-2 text-xs flex-1">
+            <div className="flex items-start gap-2 text-xs flex-1">
               <button
                 onClick={() =>
                   onToggleTask(task.id)
                 }
-                className="flex items-center gap-2"
+                className="flex items-start gap-2 text-left"
               >
                 {task.completed ? (
-                  <CheckCircle2 className="w-4 h-4 text-green-500" />
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-green-500 mt-[2px]" />
                 ) : (
                   <Circle
-                    className={`w-4 h-4 ${priorityColors[task.priority]}`}
+                    className={`w-4 h-4 flex-shrink-0 mt-[2px] ${priorityColors[task.priority]}`}
                   />
                 )}
 
                 <span
-                  className={`${
+                  className={`leading-tight ${
                     task.completed
                       ? "line-through text-muted-foreground"
                       : ""
@@ -112,10 +137,9 @@ export function WeekCard({
               </button>
             </div>
 
-            {/* 🔥 AÇÕES */}
+            {/* AÇÕES */}
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
               
-              {/* 🔁 Replicar */}
               <button
                 onClick={() =>
                   onReplicateTask(task)
@@ -125,13 +149,12 @@ export function WeekCard({
                 <Repeat className="w-3.5 h-3.5 text-blue-400 hover:text-blue-300" />
               </button>
 
-              {/* 🗑 Excluir */}
               <button
                 onClick={() =>
                   onDeleteTask(task.id)
                 }
               >
-                <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                <Trash2 className="w-3.5 h-3.5 text-red-500 hover:text-red-400" />
               </button>
             </div>
           </div>
@@ -164,9 +187,11 @@ export function WeekCard({
             <option value="alta">
               Alta prioridade
             </option>
+
             <option value="media">
               Média prioridade
             </option>
+
             <option value="baixa">
               Baixa prioridade
             </option>
@@ -175,6 +200,7 @@ export function WeekCard({
           <button
             onClick={() => {
               if (!newTask.trim()) return;
+
               onAddTask(newTask, priority);
               setNewTask("");
             }}

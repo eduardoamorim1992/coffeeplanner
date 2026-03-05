@@ -6,6 +6,7 @@ import { MonthlyChart } from "@/components/MonthlyChart";
 import { MotivationalBar } from "@/components/MotivationalBar";
 import { AppHeader } from "@/components/AppHeader";
 import AppSidebar from "@/components/AppSidebar";
+import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 
 function formatDateLocal(date: Date) {
@@ -22,8 +23,6 @@ export default function DivisionPage() {
 
   if (!division) return <Navigate to="/central" replace />;
 
-  const storageKey = `division-calendar-${division.id}`;
-
   const [calendarData, setCalendarData] = useState<
     Record<string, any[]>
   >({});
@@ -36,47 +35,64 @@ export default function DivisionPage() {
     formatDateLocal(new Date())
   );
 
-  // 🔹 carregar dados da memória
+  const user = JSON.parse(
+    localStorage.getItem("user_profile") || "null"
+  );
+
   useEffect(() => {
 
-    const saved = localStorage.getItem(storageKey);
+    async function loadTasks() {
 
-    if (saved) {
-      setCalendarData(JSON.parse(saved));
-    } else {
-      setCalendarData({});
+      if (!divisionId) return;
+
+      const { data } = await supabase
+        .from("atividades")
+        .select("*")
+        .eq("division_id", divisionId);
+
+      const grouped: Record<string, any[]> = {};
+
+      data?.forEach((task) => {
+
+        const date = task.data;
+
+        if (!grouped[date]) grouped[date] = [];
+
+        grouped[date].push({
+          id: task.id,
+          title: task.titulo,
+          completed: task.completed,
+          priority: task.prioridade
+        });
+
+      });
+
+      setCalendarData(grouped);
+
     }
 
-  }, [division.id]);
+    loadTasks();
 
-  // 🔹 salvar automaticamente na memória
-  useEffect(() => {
-
-    localStorage.setItem(
-      storageKey,
-      JSON.stringify(calendarData)
-    );
-
-  }, [calendarData]);
+  }, [divisionId]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen bg-background">
 
       <AppSidebar />
 
-      <div className="flex-1 flex flex-col overflow-hidden md:ml-64">
+      <div className="flex-1 flex flex-col">
 
         <AppHeader divisionName={division.name} />
 
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 space-y-6">
+        <main className="flex-1 overflow-y-auto p-6 space-y-6">
 
           <MotivationalBar />
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex gap-3">
 
             <button
               onClick={() => setViewMode("month")}
-              className={`px-4 py-2 rounded transition ${
+              className={`px-4 py-2 rounded ${
                 viewMode === "month"
                   ? "bg-primary text-white"
                   : "bg-muted"
@@ -87,7 +103,7 @@ export default function DivisionPage() {
 
             <button
               onClick={() => setViewMode("week")}
-              className={`px-4 py-2 rounded transition ${
+              className={`px-4 py-2 rounded ${
                 viewMode === "week"
                   ? "bg-primary text-white"
                   : "bg-muted"
@@ -100,9 +116,11 @@ export default function DivisionPage() {
 
           {viewMode === "month" ? (
 
-            <div className="flex flex-col xl:flex-row gap-8 items-start">
+            <div className="flex gap-6">
 
-              <div className="flex-1 w-full">
+              {/* CALENDÁRIO */}
+              <div className="w-[700px]">
+
                 <MonthlyView
                   calendarData={calendarData}
                   onSelectDate={(date) => {
@@ -110,10 +128,14 @@ export default function DivisionPage() {
                     setViewMode("week");
                   }}
                 />
+
               </div>
 
-              <div className="w-full xl:w-[450px]">
+              {/* GRÁFICO */}
+              <div className="w-[350px]">
+
                 <MonthlyChart calendarData={calendarData} />
+
               </div>
 
             </div>
@@ -131,6 +153,7 @@ export default function DivisionPage() {
         </main>
 
       </div>
+
     </div>
   );
 }

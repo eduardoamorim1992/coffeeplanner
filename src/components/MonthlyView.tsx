@@ -21,12 +21,8 @@ interface Props {
 export function MonthlyView({ calendarData, onSelectDate }: Props) {
   const today = new Date();
 
-  const [currentMonth, setCurrentMonth] = useState(
-    today.getMonth()
-  );
-  const [currentYear, setCurrentYear] = useState(
-    today.getFullYear()
-  );
+  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
+  const [currentYear, setCurrentYear] = useState(today.getFullYear());
 
   const firstDay = new Date(currentYear, currentMonth, 1);
   const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -46,17 +42,14 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
   }
 
   function changeMonth(offset: number) {
-    const newDate = new Date(
-      currentYear,
-      currentMonth + offset,
-      1
-    );
+    const newDate = new Date(currentYear, currentMonth + offset, 1);
     setCurrentMonth(newDate.getMonth());
     setCurrentYear(newDate.getFullYear());
   }
 
   return (
     <div className="space-y-6 max-w-4xl ml-6">
+
       {/* Header */}
       <div className="flex justify-between items-center">
         <button
@@ -67,13 +60,10 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
         </button>
 
         <h2 className="text-lg font-semibold capitalize">
-          {new Date(currentYear, currentMonth).toLocaleString(
-            "pt-BR",
-            {
-              month: "long",
-              year: "numeric",
-            }
-          )}
+          {new Date(currentYear, currentMonth).toLocaleString("pt-BR", {
+            month: "long",
+            year: "numeric",
+          })}
         </h2>
 
         <button
@@ -86,11 +76,9 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
 
       {/* Dias da semana */}
       <div className="grid grid-cols-7 gap-3 text-center text-xs text-muted-foreground">
-        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map(
-          (day) => (
-            <div key={day}>{day}</div>
-          )
-        )}
+        {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((day) => (
+          <div key={day}>{day}</div>
+        ))}
       </div>
 
       {/* Grid calendário */}
@@ -107,23 +95,16 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
 
           const tasks = calendarData[date] || [];
 
-          // 🔥 Contagem por prioridade (somente pendentes)
           const high = tasks.filter(
-            (task) =>
-              task.priority === "alta" &&
-              !task.completed
+            (task) => task.priority === "alta" && !task.completed
           ).length;
 
           const medium = tasks.filter(
-            (task) =>
-              task.priority === "media" &&
-              !task.completed
+            (task) => task.priority === "media" && !task.completed
           ).length;
 
           const low = tasks.filter(
-            (task) =>
-              task.priority === "baixa" &&
-              !task.completed
+            (task) => task.priority === "baixa" && !task.completed
           ).length;
 
           const hasHighPriority = high > 0;
@@ -146,27 +127,27 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
 
               {/* Indicadores */}
               {(high > 0 || medium > 0 || low > 0) && (
-                <div className="mt-2 space-y-1 text-xs">
+                <div className="mt-1 space-y-0.5 text-xs">
 
                   {/* Linha das quantidades */}
-                  <div className="flex items-center gap-3">
-                    
+                  <div className="flex items-center gap-1">
+
                     {high > 0 && (
-                      <div className="flex items-center gap-1 text-red-500">
+                      <div className="flex items-center gap-0.5 text-red-500">
                         <div className="w-2 h-2 bg-red-500 rounded-full" />
                         <span>{high}</span>
                       </div>
                     )}
 
                     {medium > 0 && (
-                      <div className="flex items-center gap-1 text-blue-500">
+                      <div className="flex items-center gap-0.5 text-blue-500">
                         <div className="w-2 h-2 bg-blue-500 rounded-full" />
                         <span>{medium}</span>
                       </div>
                     )}
 
                     {low > 0 && (
-                      <div className="flex items-center gap-1 text-gray-400">
+                      <div className="flex items-center gap-0.5 text-gray-400">
                         <div className="w-2 h-2 bg-gray-400 rounded-full" />
                         <span>{low}</span>
                       </div>

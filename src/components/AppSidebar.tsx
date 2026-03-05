@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { divisions } from "@/data/mockData";
+import { supabase } from "@/lib/supabase";
 import {
   LayoutDashboard,
   LogOut,
@@ -30,46 +31,36 @@ export default function AppSidebar() {
     navigate("/login");
   };
 
-  const calculateTotals = () => {
+  // CONTAR TAREFAS
+  const calculateTotals = async () => {
     const totals: Record<string, number> = {};
 
-    divisions.forEach((division) => {
-      const storageKey = `division-calendar-${division.id}`;
-      const saved = localStorage.getItem(storageKey);
+    for (const division of divisions) {
+      const { data } = await supabase
+        .from("atividades")
+        .select("id")
+        .eq("division_id", division.id)
+        .eq("completed", false);
 
-      if (!saved) {
-        totals[division.id] = 0;
-        return;
-      }
-
-      const data = JSON.parse(saved);
-
-      let total = 0;
-
-      for (const date in data) {
-        const tasks = data[date];
-        if (Array.isArray(tasks)) {
-          total += tasks.filter(
-            (task: any) => !task.completed
-          ).length;
-        }
-      }
-
-      totals[division.id] = total;
-    });
+      totals[division.id] = data?.length || 0;
+    }
 
     setPendingTotals(totals);
   };
 
   useEffect(() => {
     calculateTotals();
-    const interval = setInterval(calculateTotals, 1000);
+
+    const interval = setInterval(() => {
+      calculateTotals();
+    }, 2000);
+
     return () => clearInterval(interval);
   }, [location.pathname]);
 
   return (
     <>
-      {/* 🔥 Botão mobile */}
+      {/* BOTÃO MOBILE */}
       <button
         onClick={() => setIsMobileOpen(true)}
         className="md:hidden fixed top-4 left-4 z-50 bg-zinc-900 p-2 rounded"
@@ -77,7 +68,7 @@ export default function AppSidebar() {
         <Menu size={20} />
       </button>
 
-      {/* Overlay mobile */}
+      {/* OVERLAY MOBILE */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -85,7 +76,7 @@ export default function AppSidebar() {
         />
       )}
 
-      {/* Sidebar */}
+      {/* SIDEBAR */}
       <aside
         className={`
           ${collapsed ? "w-20" : "w-64"}
@@ -104,9 +95,10 @@ export default function AppSidebar() {
           }
         `}
       >
-        {/* 🔹 PARTE SUPERIOR */}
+        {/* PARTE SUPERIOR */}
         <div>
-          {/* Header */}
+
+          {/* HEADER */}
           <div className="p-4 flex items-center justify-between border-b border-zinc-800">
             {!collapsed && (
               <span className="text-white font-bold text-lg">
@@ -114,7 +106,6 @@ export default function AppSidebar() {
               </span>
             )}
 
-            {/* Desktop toggle */}
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="hidden md:block text-zinc-400 hover:text-white"
@@ -126,7 +117,6 @@ export default function AppSidebar() {
               )}
             </button>
 
-            {/* Mobile close */}
             <button
               onClick={() => setIsMobileOpen(false)}
               className="md:hidden"
@@ -135,13 +125,19 @@ export default function AppSidebar() {
             </button>
           </div>
 
-          {/* Menu */}
+          {/* MENU */}
           <div className="p-2 space-y-2">
+
             {(user?.role === "admin" ||
               user?.role === "coordenador") && (
               <button
                 onClick={() => navigate("/dashboard")}
-                className="flex items-center gap-3 w-full px-3 py-2 rounded text-sm text-zinc-400 hover:bg-zinc-800"
+                className={`flex items-center gap-3 w-full px-3 py-2 rounded text-sm transition
+                ${
+                  location.pathname === "/dashboard"
+                    ? "bg-red-600 text-white"
+                    : "text-zinc-400 hover:bg-zinc-800"
+                }`}
               >
                 <LayoutDashboard size={18} />
                 {!collapsed && "Dashboard"}
@@ -150,8 +146,10 @@ export default function AppSidebar() {
 
             {divisions.map((division) => {
               const Icon = division.icon;
-              const pending =
-                pendingTotals[division.id] || 0;
+              const pending = pendingTotals[division.id] || 0;
+
+              const isActive =
+                location.pathname === `/${division.id}`;
 
               return (
                 <button
@@ -159,7 +157,12 @@ export default function AppSidebar() {
                   onClick={() =>
                     navigate(`/${division.id}`)
                   }
-                  className="flex items-center justify-between w-full px-3 py-2 rounded text-sm text-zinc-400 hover:bg-zinc-800"
+                  className={`flex items-center justify-between w-full px-3 py-2 rounded text-sm transition
+                  ${
+                    isActive
+                      ? "bg-red-600 text-white"
+                      : "text-zinc-400 hover:bg-zinc-800"
+                  }`}
                 >
                   <div className="flex items-center gap-3">
                     <Icon size={18} />
@@ -167,33 +170,44 @@ export default function AppSidebar() {
                   </div>
 
                   {!collapsed && pending > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-700 text-white">
+                    <span
+                      className={`text-xs px-2 py-0.5 rounded-full
+                      ${
+                        isActive
+                          ? "bg-white text-red-600"
+                          : "bg-zinc-700 text-white"
+                      }`}
+                    >
                       {pending}
                     </span>
                   )}
                 </button>
               );
             })}
+
           </div>
         </div>
 
-        {/* 🔹 RODAPÉ */}
+        {/* RODAPÉ */}
         <div className="p-2 border-t border-zinc-800 space-y-2">
 
-          {/* ⚙️ BOTÃO CONFIGURAÇÕES (SÓ ADMIN) */}
           {user?.role === "admin" && (
             <button
               onClick={() =>
                 navigate("/admin/users")
               }
-              className="flex items-center gap-3 w-full px-3 py-2 rounded text-sm text-zinc-400 hover:bg-zinc-800"
+              className={`flex items-center gap-3 w-full px-3 py-2 rounded text-sm transition
+              ${
+                location.pathname === "/admin/users"
+                  ? "bg-red-600 text-white"
+                  : "text-zinc-400 hover:bg-zinc-800"
+              }`}
             >
               <Settings size={18} />
               {!collapsed && "Configurações"}
             </button>
           )}
 
-          {/* 🚪 SAIR */}
           <button
             onClick={handleLogout}
             className="flex items-center gap-3 w-full px-3 py-2 rounded text-sm text-zinc-400 hover:bg-zinc-800"
@@ -201,6 +215,7 @@ export default function AppSidebar() {
             <LogOut size={18} />
             {!collapsed && "Sair"}
           </button>
+
         </div>
       </aside>
     </>
