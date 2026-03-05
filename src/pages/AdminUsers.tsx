@@ -210,9 +210,12 @@ export default function AdminUsers() {
               className="border px-2 py-1 rounded text-black bg-white text-sm"
             >
               <option value="central">Central</option>
+              <option value="gestao-pneus">Gestão de Pneus</option>
               <option value="planejamento">Planejamento</option>
-              <option value="laboratorio-oleo">Laboratório</option>
-              <option value="gestao-pneus">Gestão Pneus</option>
+              <option value="aprovisionamento">Aprovisionamento</option>
+              <option value="cst">CST</option>
+              <option value="coordenacao">Coordenação</option>
+              <option value="laboratorio-oleo">Laboratório de Óleo</option>
             </select>
 
             <button

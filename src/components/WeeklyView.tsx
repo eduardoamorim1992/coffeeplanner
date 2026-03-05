@@ -12,7 +12,7 @@ function formatDateLocal(date: Date) {
   ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-// 🔥 NOVO formato brasileiro
+// formato brasileiro
 function formatDateBR(dateString: string) {
   const [year, month, day] = dateString.split("-");
   return `${day}/${month}/${year}`;
@@ -31,12 +31,14 @@ interface Props {
     React.SetStateAction<Record<string, Task[]>>
   >;
   selectedDate: string;
+  divisionId?: string;
 }
 
 export function WeeklyView({
   calendarData,
   setCalendarData,
   selectedDate,
+  divisionId
 }: Props) {
 
   const baseDate = parseLocalDate(selectedDate);
@@ -76,14 +78,12 @@ export function WeeklyView({
     priority: "alta" | "media" | "baixa"
   ) {
 
-    const user = JSON.parse(
-      localStorage.getItem("user_profile") || "null"
-    );
+    if (!divisionId) return;
 
     const { data } = await supabase
       .from("atividades")
       .insert({
-        division_id: user.division_id,
+        division_id: divisionId,
         data: dayDate,
         titulo: title,
         prioridade: priority,

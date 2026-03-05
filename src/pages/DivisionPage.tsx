@@ -23,56 +23,51 @@ export default function DivisionPage() {
 
   if (!division) return <Navigate to="/central" replace />;
 
-  const [calendarData, setCalendarData] = useState<
-    Record<string, any[]>
-  >({});
+  const [calendarData, setCalendarData] = useState<Record<string, any[]>>({});
 
-  const [viewMode, setViewMode] = useState<
-    "week" | "month"
-  >("month");
+  const [viewMode, setViewMode] = useState<"week" | "month">("month");
 
   const [selectedDate, setSelectedDate] = useState<string>(
     formatDateLocal(new Date())
   );
 
-  const user = JSON.parse(
-    localStorage.getItem("user_profile") || "null"
-  );
+  async function loadTasks() {
 
-  useEffect(() => {
+    if (!divisionId) return;
 
-    async function loadTasks() {
+    const { data, error } = await supabase
+      .from("atividades")
+      .select("*")
+      .eq("division_id", divisionId);
 
-      if (!divisionId) return;
-
-      const { data } = await supabase
-        .from("atividades")
-        .select("*")
-        .eq("division_id", divisionId);
-
-      const grouped: Record<string, any[]> = {};
-
-      data?.forEach((task) => {
-
-        const date = task.data;
-
-        if (!grouped[date]) grouped[date] = [];
-
-        grouped[date].push({
-          id: task.id,
-          title: task.titulo,
-          completed: task.completed,
-          priority: task.prioridade
-        });
-
-      });
-
-      setCalendarData(grouped);
-
+    if (error) {
+      console.error(error);
+      return;
     }
 
-    loadTasks();
+    const grouped: Record<string, any[]> = {};
 
+    data?.forEach((task) => {
+
+      const date = task.data;
+
+      if (!grouped[date]) grouped[date] = [];
+
+      grouped[date].push({
+        id: task.id,
+        title: task.titulo,
+        completed: task.completed,
+        priority: task.prioridade
+      });
+
+    });
+
+    setCalendarData(grouped);
+
+  }
+
+  useEffect(() => {
+    loadTasks();
   }, [divisionId]);
 
   return (
@@ -146,6 +141,7 @@ export default function DivisionPage() {
               calendarData={calendarData}
               setCalendarData={setCalendarData}
               selectedDate={selectedDate}
+              divisionId={divisionId}
             />
 
           )}
