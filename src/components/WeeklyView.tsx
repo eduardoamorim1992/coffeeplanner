@@ -12,7 +12,6 @@ function formatDateLocal(date: Date) {
   ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-// formato brasileiro
 function formatDateBR(dateString: string) {
   const [year, month, day] = dateString.split("-");
   return `${day}/${month}/${year}`;
@@ -146,6 +145,77 @@ export function WeeklyView({
     }));
   }
 
+  async function replicateTask(task: Task, startDate: string) {
+
+    if (!divisionId) return;
+
+    const start = parseLocalDate(startDate);
+
+    const weekday = start.getDay();
+    const month = start.getMonth();
+    const year = start.getFullYear();
+
+    const inserts = [];
+
+    for (let d = 1; d <= 31; d++) {
+
+      const date = new Date(year, month, d);
+
+      if (date.getMonth() !== month) break;
+
+      if (date.getDay() === weekday) {
+
+        const iso = formatDateLocal(date);
+
+        const exists = (calendarData[iso] || []).some(
+          (t) => t.title === task.title
+        );
+
+        if (!exists) {
+
+          inserts.push({
+            division_id: divisionId,
+            data: iso,
+            titulo: task.title,
+            prioridade: task.priority,
+            completed: false
+          });
+
+        }
+
+      }
+
+    }
+
+    if (inserts.length === 0) return;
+
+    const { data } = await supabase
+      .from("atividades")
+      .insert(inserts)
+      .select();
+
+    if (!data) return;
+
+    const updated = { ...calendarData };
+
+    data.forEach((task) => {
+
+      const date = task.data;
+
+      if (!updated[date]) updated[date] = [];
+
+      updated[date].push({
+        id: task.id,
+        title: task.titulo,
+        completed: task.completed,
+        priority: task.prioridade
+      });
+
+    });
+
+    setCalendarData(updated);
+  }
+
   return (
     <div className="flex gap-4 overflow-x-auto pb-4">
 
@@ -169,7 +239,9 @@ export function WeeklyView({
             addTask(day.date, title, priority)
           }
 
-          onReplicateTask={() => {}}
+          onReplicateTask={(task) =>
+            replicateTask(task, day.date)
+          }
         />
 
       ))}
