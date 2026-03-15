@@ -19,7 +19,8 @@ interface WeekCardProps {
   onDeleteTask: (taskId: string) => void;
   onAddTask: (
     title: string,
-    priority: "alta" | "media" | "baixa"
+    priority: "alta" | "media" | "baixa",
+    time: string
   ) => void;
   onReplicateTask: (task: any) => void;
 }
@@ -33,7 +34,9 @@ export function WeekCard({
   onAddTask,
   onReplicateTask,
 }: WeekCardProps) {
+
   const [newTask, setNewTask] = useState("");
+  const [taskTime, setTaskTime] = useState("");
   const [priority, setPriority] =
     useState<"alta" | "media" | "baixa">("media");
 
@@ -67,6 +70,7 @@ export function WeekCard({
       }`}
       style={{ animationDelay: `${index * 60}ms` }}
     >
+
       {/* HEADER */}
       <div className="px-4 py-3 border-b border-border/50 flex items-center justify-between">
         <div>
@@ -86,7 +90,7 @@ export function WeekCard({
         )}
       </div>
 
-      {/* BARRA DE PROGRESSO */}
+      {/* BARRA PROGRESSO */}
       {totalCount > 0 && (
         <div className="px-4 pt-2">
           <div className="w-full h-1.5 bg-muted/40 rounded overflow-hidden">
@@ -100,7 +104,9 @@ export function WeekCard({
 
       {/* TASKS */}
       <div className="px-4 py-3 flex-1 space-y-2">
+
         {day.tasks.map((task) => (
+
           <div
             key={task.id}
             className={`flex items-start justify-between group rounded px-2 py-1 transition
@@ -110,13 +116,16 @@ export function WeekCard({
                 : priorityBackground[task.priority]
             }`}
           >
+
             <div className="flex items-start gap-2 text-xs flex-1">
+
               <button
                 onClick={() =>
                   onToggleTask(task.id)
                 }
                 className="flex items-start gap-2 text-left"
               >
+
                 {task.completed ? (
                   <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-green-500 mt-[2px]" />
                 ) : (
@@ -132,19 +141,29 @@ export function WeekCard({
                       : ""
                   }`}
                 >
+
+                  {task.time && (
+                    <span className="text-[10px] text-muted-foreground mr-2">
+                      {task.time}
+                    </span>
+                  )}
+
                   {task.title}
+
                 </span>
+
               </button>
+
             </div>
 
             {/* AÇÕES */}
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition">
-              
+
               <button
                 onClick={() =>
                   onReplicateTask(task)
                 }
-                title="Replicar toda semana"
+                title="Replicar no mês"
               >
                 <Repeat className="w-3.5 h-3.5 text-blue-400 hover:text-blue-300" />
               </button>
@@ -156,12 +175,16 @@ export function WeekCard({
               >
                 <Trash2 className="w-3.5 h-3.5 text-red-500 hover:text-red-400" />
               </button>
+
             </div>
+
           </div>
+
         ))}
 
         {/* ADD TASK */}
         <div className="flex flex-col gap-2 pt-2">
+
           <input
             type="text"
             value={newTask}
@@ -169,6 +192,16 @@ export function WeekCard({
               setNewTask(e.target.value)
             }
             placeholder="Nova atividade..."
+            className="text-xs px-2 py-1 rounded bg-muted/30 border border-border"
+          />
+
+          {/* HORA */}
+          <input
+            type="time"
+            value={taskTime}
+            onChange={(e) =>
+              setTaskTime(e.target.value)
+            }
             className="text-xs px-2 py-1 rounded bg-muted/30 border border-border"
           />
 
@@ -199,16 +232,22 @@ export function WeekCard({
 
           <button
             onClick={() => {
+
               if (!newTask.trim()) return;
 
-              onAddTask(newTask, priority);
+              onAddTask(newTask, priority, taskTime);
+
               setNewTask("");
+              setTaskTime("");
+
             }}
             className="text-xs px-2 py-1 rounded bg-primary text-white hover:opacity-90 transition"
           >
             Adicionar
           </button>
+
         </div>
+
       </div>
 
       {/* FOOTER */}
@@ -219,6 +258,7 @@ export function WeekCard({
           </p>
         </div>
       )}
+
     </div>
   );
 }

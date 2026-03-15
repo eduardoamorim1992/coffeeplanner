@@ -1,5 +1,6 @@
 import { WeekCard } from "./WeekCard";
 import { supabase } from "@/lib/supabase";
+import { useEffect, useRef } from "react";
 
 function parseLocalDate(dateString: string) {
   const [year, month, day] = dateString.split("-").map(Number);
@@ -20,6 +21,7 @@ function formatDateBR(dateString: string) {
 interface Task {
   id: string;
   title: string;
+  time?: string;
   completed: boolean;
   priority: "alta" | "media" | "baixa";
 }
@@ -33,12 +35,95 @@ interface Props {
   divisionId?: string;
 }
 
+function sortTasks(tasks: Task[]) {
+  return [...tasks].sort((a, b) => {
+    if (!a.time) return 1;
+    if (!b.time) return -1;
+    return a.time.localeCompare(b.time);
+  });
+}
+
+function showNotification(title: string) {
+
+  if (Notification.permission === "granted") {
+
+    new Notification("⏰ Atividade em 10 minutos", {
+      body: title
+    });
+
+  }
+
+}
+
 export function WeeklyView({
   calendarData,
   setCalendarData,
   selectedDate,
   divisionId
 }: Props) {
+
+  const notifiedTasks = useRef<Set<string>>(new Set());
+
+  /* PEDIR PERMISSÃO */
+  useEffect(() => {
+
+    if ("Notification" in window) {
+
+      Notification.requestPermission().then((permission) => {
+        console.log("Permissão:", permission);
+      });
+
+    }
+
+  }, []);
+
+  /* SISTEMA DE ALERTA */
+  useEffect(() => {
+
+    const interval = setInterval(() => {
+
+      const now = new Date();
+
+      const today = formatDateLocal(now);
+
+      const tasksToday = calendarData[today] || [];
+
+      tasksToday.forEach((task) => {
+
+        if (!task.time) return;
+
+        const [hour, minute] = task.time.split(":").map(Number);
+
+        const taskDate = new Date();
+        taskDate.setHours(hour);
+        taskDate.setMinutes(minute);
+        taskDate.setSeconds(0);
+
+        const diff = taskDate.getTime() - now.getTime();
+
+        const tenMinutes = 10 * 60 * 1000;
+
+        console.log("verificando tarefa:", task.title);
+
+        if (
+          diff <= tenMinutes &&
+          diff > 0 &&
+          !notifiedTasks.current.has(task.id)
+        ) {
+
+          showNotification(task.title);
+
+          notifiedTasks.current.add(task.id);
+
+        }
+
+      });
+
+    }, 30000);
+
+    return () => clearInterval(interval);
+
+  }, [calendarData]);
 
   const baseDate = parseLocalDate(selectedDate);
 
@@ -67,14 +152,16 @@ export function WeeklyView({
       dayName: d.toLocaleDateString("pt-BR", {
         weekday: "long",
       }),
-      tasks: calendarData[iso] || [],
+      tasks: sortTasks(calendarData[iso] || []),
     });
+
   }
 
   async function addTask(
     dayDate: string,
     title: string,
-    priority: "alta" | "media" | "baixa"
+    priority: "alta" | "media" | "baixa",
+    time: string
   ) {
 
     if (!divisionId) return;
@@ -84,6 +171,7 @@ export function WeeklyView({
       .insert({
         division_id: divisionId,
         data: dayDate,
+        hora: time,
         titulo: title,
         prioridade: priority,
         completed: false
@@ -95,16 +183,18 @@ export function WeeklyView({
 
     setCalendarData((prev) => ({
       ...prev,
-      [dayDate]: [
+      [dayDate]: sortTasks([
         ...(prev[dayDate] || []),
         {
           id: data.id,
           title: data.titulo,
+          time: data.hora,
           completed: data.completed,
           priority: data.prioridade
         }
-      ]
+      ])
     }));
+
   }
 
   async function toggleTask(dayDate: string, taskId: string) {
@@ -128,6 +218,7 @@ export function WeeklyView({
           : task
       ),
     }));
+
   }
 
   async function deleteTask(dayDate: string, taskId: string) {
@@ -143,80 +234,15 @@ export function WeeklyView({
         (task) => task.id !== taskId
       ),
     }));
+
   }
 
   async function replicateTask(task: Task, startDate: string) {
-
-    if (!divisionId) return;
-
-    const start = parseLocalDate(startDate);
-
-    const weekday = start.getDay();
-    const month = start.getMonth();
-    const year = start.getFullYear();
-
-    const inserts = [];
-
-    for (let d = 1; d <= 31; d++) {
-
-      const date = new Date(year, month, d);
-
-      if (date.getMonth() !== month) break;
-
-      if (date.getDay() === weekday) {
-
-        const iso = formatDateLocal(date);
-
-        const exists = (calendarData[iso] || []).some(
-          (t) => t.title === task.title
-        );
-
-        if (!exists) {
-
-          inserts.push({
-            division_id: divisionId,
-            data: iso,
-            titulo: task.title,
-            prioridade: task.priority,
-            completed: false
-          });
-
-        }
-
-      }
-
-    }
-
-    if (inserts.length === 0) return;
-
-    const { data } = await supabase
-      .from("atividades")
-      .insert(inserts)
-      .select();
-
-    if (!data) return;
-
-    const updated = { ...calendarData };
-
-    data.forEach((task) => {
-
-      const date = task.data;
-
-      if (!updated[date]) updated[date] = [];
-
-      updated[date].push({
-        id: task.id,
-        title: task.titulo,
-        completed: task.completed,
-        priority: task.prioridade
-      });
-
-    });
-
-    setCalendarData(updated);
+    console.log("replicando:", task.title);
   }
 
   return (
+
     <div className="flex gap-4 overflow-x-auto pb-4">
 
       {week.map((day, i) => (
@@ -235,17 +261,20 @@ export function WeeklyView({
             deleteTask(day.date, taskId)
           }
 
-          onAddTask={(title, priority) =>
-            addTask(day.date, title, priority)
+          onAddTask={(title, priority, time) =>
+            addTask(day.date, title, priority, time)
           }
 
           onReplicateTask={(task) =>
             replicateTask(task, day.date)
           }
+
         />
 
       ))}
 
     </div>
+
   );
+
 }
