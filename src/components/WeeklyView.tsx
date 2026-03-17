@@ -44,15 +44,11 @@ function sortTasks(tasks: Task[]) {
 }
 
 function showNotification(title: string) {
-
   if (Notification.permission === "granted") {
-
     new Notification("⏰ Atividade em 10 minutos", {
-      body: title
+      body: title,
     });
-
   }
-
 }
 
 export function WeeklyView({
@@ -64,26 +60,18 @@ export function WeeklyView({
 
   const notifiedTasks = useRef<Set<string>>(new Set());
 
-  /* PEDIR PERMISSÃO */
   useEffect(() => {
-
     if ("Notification" in window) {
-
-      Notification.requestPermission().then((permission) => {
-        console.log("Permissão:", permission);
-      });
-
+      Notification.requestPermission();
     }
-
   }, []);
 
-  /* SISTEMA DE ALERTA */
+  /* 🔔 ALERTA */
   useEffect(() => {
 
     const interval = setInterval(() => {
 
       const now = new Date();
-
       const today = formatDateLocal(now);
 
       const tasksToday = calendarData[today] || [];
@@ -100,21 +88,15 @@ export function WeeklyView({
         taskDate.setSeconds(0);
 
         const diff = taskDate.getTime() - now.getTime();
-
         const tenMinutes = 10 * 60 * 1000;
-
-        console.log("verificando tarefa:", task.title);
 
         if (
           diff <= tenMinutes &&
           diff > 0 &&
           !notifiedTasks.current.has(task.id)
         ) {
-
           showNotification(task.title);
-
           notifiedTasks.current.add(task.id);
-
         }
 
       });
@@ -132,12 +114,7 @@ export function WeeklyView({
     baseDate.getDate() - ((baseDate.getDay() + 6) % 7)
   );
 
-  const week: {
-    date: string;
-    displayDate: string;
-    dayName: string;
-    tasks: Task[];
-  }[] = [];
+  const week: any[] = [];
 
   for (let i = 0; i < 7; i++) {
 
@@ -157,12 +134,8 @@ export function WeeklyView({
 
   }
 
-  async function addTask(
-    dayDate: string,
-    title: string,
-    priority: "alta" | "media" | "baixa",
-    time: string
-  ) {
+  /* ➕ ADD */
+  async function addTask(dayDate: string, title: string, priority: any, time: string) {
 
     if (!divisionId) return;
 
@@ -197,30 +170,37 @@ export function WeeklyView({
 
   }
 
+  /* ✅ TOGGLE CORRIGIDO */
   async function toggleTask(dayDate: string, taskId: string) {
 
     const tasks = calendarData[dayDate] || [];
     const task = tasks.find((t) => t.id === taskId);
     if (!task) return;
 
-    await supabase
+    const newStatus = !task.completed;
+
+    const { error } = await supabase
       .from("atividades")
-      .update({
-        completed: !task.completed
-      })
+      .update({ completed: newStatus })
       .eq("id", taskId);
+
+    if (error) {
+      console.error(error);
+      return;
+    }
 
     setCalendarData((prev) => ({
       ...prev,
-      [dayDate]: (prev[dayDate] || []).map((task) =>
-        task.id === taskId
-          ? { ...task, completed: !task.completed }
-          : task
+      [dayDate]: sortTasks(
+        (prev[dayDate] || []).map((t) =>
+          t.id === taskId ? { ...t, completed: newStatus } : t
+        )
       ),
     }));
 
   }
 
+  /* 🗑 DELETE */
   async function deleteTask(dayDate: string, taskId: string) {
 
     await supabase
@@ -231,18 +211,80 @@ export function WeeklyView({
     setCalendarData((prev) => ({
       ...prev,
       [dayDate]: (prev[dayDate] || []).filter(
-        (task) => task.id !== taskId
+        (t) => t.id !== taskId
       ),
     }));
 
   }
 
+  /* 🔁 REPLICAR */
   async function replicateTask(task: Task, startDate: string) {
-    console.log("replicando:", task.title);
+
+    if (!divisionId) return;
+
+    const start = parseLocalDate(startDate);
+    const weekday = start.getDay();
+    const month = start.getMonth();
+    const year = start.getFullYear();
+
+    const inserts: any[] = [];
+
+    for (let day = 1; day <= 31; day++) {
+
+      const date = new Date(year, month, day);
+
+      if (date.getMonth() !== month) break;
+
+      if (date.getDay() === weekday) {
+
+        const iso = formatDateLocal(date);
+
+        const exists = (calendarData[iso] || []).some(
+          (t) => t.title === task.title && t.time === task.time
+        );
+
+        if (!exists) {
+
+          inserts.push({
+            division_id: divisionId,
+            data: iso,
+            hora: task.time || null,
+            titulo: task.title,
+            prioridade: task.priority,
+            completed: false
+          });
+
+        }
+
+      }
+
+    }
+
+    if (inserts.length === 0) return;
+
+    const { data } = await supabase
+      .from("atividades")
+      .insert(inserts)
+      .select();
+
+    const updated = { ...calendarData };
+
+    data?.forEach((t) => {
+      if (!updated[t.data]) updated[t.data] = [];
+      updated[t.data].push({
+        id: t.id,
+        title: t.titulo,
+        time: t.hora,
+        completed: t.completed,
+        priority: t.prioridade
+      });
+    });
+
+    setCalendarData(updated);
+
   }
 
   return (
-
     <div className="flex gap-4 overflow-x-auto pb-4">
 
       {week.map((day, i) => (
@@ -253,28 +295,16 @@ export function WeeklyView({
           isToday={false}
           index={i}
 
-          onToggleTask={(taskId: string) =>
-            toggleTask(day.date, taskId)
-          }
-
-          onDeleteTask={(taskId: string) =>
-            deleteTask(day.date, taskId)
-          }
-
-          onAddTask={(title, priority, time) =>
-            addTask(day.date, title, priority, time)
-          }
-
-          onReplicateTask={(task) =>
-            replicateTask(task, day.date)
-          }
+          onToggleTask={(id) => toggleTask(day.date, id)}
+          onDeleteTask={(id) => deleteTask(day.date, id)}
+          onAddTask={(t, p, time) => addTask(day.date, t, p, time)}
+          onReplicateTask={(task) => replicateTask(task, day.date)}
 
         />
 
       ))}
 
     </div>
-
   );
 
 }

@@ -47,10 +47,22 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
     setCurrentYear(newDate.getFullYear());
   }
 
+  function getStatus(tasks: Task[]) {
+    if (!tasks || tasks.length === 0) return "empty";
+
+    const completed = tasks.filter((t) => t.completed).length;
+    const total = tasks.length;
+
+    if (completed === total) return "done";
+    if (completed === 0) return "pending";
+
+    return "mixed";
+  }
+
   return (
     <div className="space-y-6 max-w-4xl ml-6">
 
-      {/* Header */}
+      {/* HEADER */}
       <div className="flex justify-between items-center">
         <button
           onClick={() => changeMonth(-1)}
@@ -74,96 +86,109 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
         </button>
       </div>
 
-      {/* Dias da semana */}
+      {/* DIAS DA SEMANA */}
       <div className="grid grid-cols-7 gap-3 text-center text-xs text-muted-foreground">
         {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((day) => (
           <div key={day}>{day}</div>
         ))}
       </div>
 
-      {/* Grid calendário */}
+      {/* GRID */}
       <div className="grid grid-cols-7 gap-3">
         {days.map((date, index) => {
+
           if (!date) {
-            return (
-              <div
-                key={index}
-                className="h-24 border-transparent"
-              />
-            );
+            return <div key={index} className="h-24 border-transparent" />;
           }
 
           const tasks = calendarData[date] || [];
 
           const high = tasks.filter(
-            (task) => task.priority === "alta" && !task.completed
+            (t) => t.priority === "alta" && !t.completed
           ).length;
 
           const medium = tasks.filter(
-            (task) => task.priority === "media" && !task.completed
+            (t) => t.priority === "media" && !t.completed
           ).length;
 
           const low = tasks.filter(
-            (task) => task.priority === "baixa" && !task.completed
+            (t) => t.priority === "baixa" && !t.completed
           ).length;
 
-          const hasHighPriority = high > 0;
+          const completed = tasks.filter((t) => t.completed).length;
+
+          const status = getStatus(tasks);
 
           return (
             <div
               key={index}
-              className={`h-24 border rounded-lg p-2 cursor-pointer transition
-                ${
-                  hasHighPriority
-                    ? "border-red-500 bg-red-500/10"
-                    : "hover:border-primary hover:bg-muted/20"
-                }`}
               onClick={() => onSelectDate(date)}
+              className={`
+                h-24 border rounded-lg p-2 cursor-pointer transition-all
+
+                ${status === "done" && "bg-green-500/20 border-green-500"}
+                ${status === "pending" && high > 0 && "bg-red-500/10 border-red-500"}
+                ${status === "mixed" && "bg-yellow-500/10 border-yellow-500"}
+
+                hover:scale-[1.02]
+              `}
             >
-              {/* Número do dia */}
-              <div className="text-sm font-semibold">
-                {Number(date.split("-")[2])}
+              {/* DIA + CONTADOR */}
+              <div className="flex justify-between items-start">
+                <span className="text-sm font-semibold">
+                  {Number(date.split("-")[2])}
+                </span>
+
+                {tasks.length > 0 && (
+                  <span className="text-[10px] text-muted-foreground">
+                    {completed}/{tasks.length}
+                  </span>
+                )}
               </div>
 
-              {/* Indicadores */}
-              {(high > 0 || medium > 0 || low > 0) && (
-                <div className="mt-1 space-y-0.5 text-xs">
+              {/* INDICADORES */}
+              <div className="mt-1 space-y-0.5 text-xs">
 
-                  {/* Linha das quantidades */}
-                  <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1 flex-wrap">
 
-                    {high > 0 && (
-                      <div className="flex items-center gap-0.5 text-red-500">
-                        <div className="w-2 h-2 bg-red-500 rounded-full" />
-                        <span>{high}</span>
-                      </div>
-                    )}
-
-                    {medium > 0 && (
-                      <div className="flex items-center gap-0.5 text-blue-500">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                        <span>{medium}</span>
-                      </div>
-                    )}
-
-                    {low > 0 && (
-                      <div className="flex items-center gap-0.5 text-gray-400">
-                        <div className="w-2 h-2 bg-gray-400 rounded-full" />
-                        <span>{low}</span>
-                      </div>
-                    )}
-
-                  </div>
-
-                  {/* Texto apenas se houver alta */}
                   {high > 0 && (
-                    <div className="text-[10px] text-red-400 font-semibold">
-                      Alta prioridade
+                    <div className="flex items-center gap-0.5 text-red-500">
+                      <div className="w-2 h-2 bg-red-500 rounded-full" />
+                      <span>{high}</span>
+                    </div>
+                  )}
+
+                  {medium > 0 && (
+                    <div className="flex items-center gap-0.5 text-blue-500">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full" />
+                      <span>{medium}</span>
+                    </div>
+                  )}
+
+                  {low > 0 && (
+                    <div className="flex items-center gap-0.5 text-gray-400">
+                      <div className="w-2 h-2 bg-gray-400 rounded-full" />
+                      <span>{low}</span>
                     </div>
                   )}
 
                 </div>
-              )}
+
+                {/* TEXTO */}
+                {high > 0 && (
+                  <div className="text-[10px] text-red-400 font-semibold">
+                    Alta prioridade
+                  </div>
+                )}
+
+                {/* CONCLUÍDO */}
+                {status === "done" && (
+                  <div className="text-[10px] text-green-400 font-semibold">
+                    ✔ Concluído
+                  </div>
+                )}
+
+              </div>
             </div>
           );
         })}
