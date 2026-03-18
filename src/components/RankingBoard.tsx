@@ -1,69 +1,100 @@
-import { divisions } from "@/data/mockData";
+import { Trophy } from "lucide-react";
 
 interface Props {
   globalCalendarData: Record<string, Record<string, any[]>>;
 }
 
 export function RankingBoard({ globalCalendarData }: Props) {
-  const ranking = divisions.map((division) => {
-    const divisionData =
-      globalCalendarData[division.id] || {};
 
-    let completed = 0;
-    let total = 0;
+  const users: Record<
+    string,
+    { total: number; completed: number }
+  > = {};
 
-    Object.values(divisionData).forEach((tasks) => {
+  // 🔥 percorre TODAS as divisões
+  Object.values(globalCalendarData).forEach((division: any) => {
+
+    Object.values(division).forEach((tasks: any) => {
+
       tasks.forEach((task: any) => {
-        total += 1;
-        if (task.completed) completed += 1;
+
+        const user = task.userName || "Sem usuário";
+
+        if (!users[user]) {
+          users[user] = { total: 0, completed: 0 };
+        }
+
+        users[user].total++;
+
+        if (task.completed) {
+          users[user].completed++;
+        }
+
       });
+
     });
 
-    const rate =
-      total > 0
-        ? Math.round((completed / total) * 100)
-        : 0;
-
-    return {
-      name: division.name,
-      completed,
-      total,
-      rate,
-    };
   });
 
+  // 🔥 monta ranking
+  const ranking = Object.entries(users).map(([name, val]) => ({
+    name,
+    total: val.total,
+    completed: val.completed,
+    rate:
+      val.total > 0
+        ? Math.round((val.completed / val.total) * 100)
+        : 0,
+  }));
+
+  // 🔥 ordena
   ranking.sort((a, b) => b.rate - a.rate);
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 shadow-lg">
-      <h3 className="text-white font-semibold mb-4">
-        🏆 Ranking de Performance
+    <div className="bg-card border border-border rounded-xl p-6 shadow-lg">
+
+      <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <Trophy size={18} />
+        Ranking de Performance (Usuários)
       </h3>
 
       <div className="space-y-3">
-        {ranking.map((division, index) => (
-          <div
-            key={division.name}
-            className="flex justify-between items-center text-sm"
-          >
-            <span className="text-zinc-300">
-              {index + 1}. {division.name}
-            </span>
 
-            <span
-              className={`font-semibold ${
-                division.rate >= 70
-                  ? "text-green-400"
-                  : division.rate >= 40
-                  ? "text-yellow-400"
-                  : "text-red-400"
-              }`}
+        {ranking.map((user, index) => {
+
+          const medal =
+            index === 0 ? "🥇" :
+            index === 1 ? "🥈" :
+            index === 2 ? "🥉" : `${index + 1}.`;
+
+          return (
+            <div
+              key={user.name}
+              className="flex justify-between items-center text-sm"
             >
-              {division.rate}%
-            </span>
-          </div>
-        ))}
+
+              <span className="text-muted-foreground">
+                {medal} {user.name}
+              </span>
+
+              <span
+                className={`font-semibold ${
+                  user.rate >= 70
+                    ? "text-green-500"
+                    : user.rate >= 40
+                    ? "text-yellow-500"
+                    : "text-red-500"
+                }`}
+              >
+                {user.rate}%
+              </span>
+
+            </div>
+          );
+        })}
+
       </div>
+
     </div>
   );
 }
