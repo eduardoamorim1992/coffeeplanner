@@ -31,7 +31,6 @@ export function MonthlyChart({ calendarData }: Props) {
     now.getFullYear()
   );
 
-  // 🔥 AGRUPAR POR DIA
   const dailyMap: Record<
     string,
     { completed: number; pending: number }
@@ -56,12 +55,10 @@ export function MonthlyChart({ calendarData }: Props) {
 
   });
 
-  // 🔥 ORDENAR
   const sorted = Object.entries(dailyMap).sort(([a], [b]) =>
     a.localeCompare(b)
   );
 
-  // 🔥 ACUMULADO
   let accCompleted = 0;
   let accPending = 0;
 
@@ -78,13 +75,12 @@ export function MonthlyChart({ calendarData }: Props) {
 
   });
 
-  // 🔥 TAXA
   const total = accCompleted + accPending;
   const rate =
     total > 0 ? Math.round((accCompleted / total) * 100) : 0;
 
   return (
-    <div className="bg-zinc-900 border border-zinc-700 rounded-xl p-6 shadow-lg space-y-4">
+    <div className="bg-card border border-border rounded-xl p-6 shadow-lg space-y-4 transition">
 
       {/* FILTROS */}
       <div className="flex gap-2 justify-center">
@@ -94,7 +90,7 @@ export function MonthlyChart({ calendarData }: Props) {
           onChange={(e) =>
             setSelectedMonth(Number(e.target.value))
           }
-          className="text-xs px-2 py-1 rounded bg-zinc-800 border border-zinc-600 text-white"
+          className="text-xs px-2 py-1 rounded bg-muted border border-border text-foreground"
         >
           {[
             "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
@@ -111,7 +107,7 @@ export function MonthlyChart({ calendarData }: Props) {
           onChange={(e) =>
             setSelectedYear(Number(e.target.value))
           }
-          className="text-xs px-2 py-1 rounded bg-zinc-800 border border-zinc-600 text-white"
+          className="text-xs px-2 py-1 rounded bg-muted border border-border text-foreground"
         >
           {[2024, 2025, 2026, 2027].map((y) => (
             <option key={y} value={y}>
@@ -123,14 +119,14 @@ export function MonthlyChart({ calendarData }: Props) {
       </div>
 
       {/* TÍTULO */}
-      <h3 className="text-white font-semibold text-center">
+      <h3 className="text-foreground font-semibold text-center">
         Evolução Mensal
       </h3>
 
       {/* TAXA */}
-      <div className="text-center text-sm text-zinc-400">
+      <div className="text-center text-sm text-muted-foreground">
         Taxa de conclusão:{" "}
-        <span className="text-green-400 font-semibold">
+        <span className="text-green-500 font-semibold">
           {rate}%
         </span>
       </div>
@@ -142,26 +138,27 @@ export function MonthlyChart({ calendarData }: Props) {
 
             <defs>
               <linearGradient id="greenArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#22c55e" stopOpacity={0.9} />
+                <stop offset="0%" stopColor="#22c55e" stopOpacity={0.8} />
                 <stop offset="100%" stopColor="#22c55e" stopOpacity={0.05} />
               </linearGradient>
 
               <linearGradient id="redArea" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.9} />
+                <stop offset="0%" stopColor="#ef4444" stopOpacity={0.8} />
                 <stop offset="100%" stopColor="#ef4444" stopOpacity={0.05} />
               </linearGradient>
             </defs>
 
-            <CartesianGrid strokeDasharray="3 3" stroke="#333" />
+            <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
 
-            <XAxis dataKey="day" stroke="#aaa" />
-            <YAxis stroke="#aaa" />
+            <XAxis dataKey="day" stroke="hsl(var(--muted-foreground))" />
+            <YAxis stroke="hsl(var(--muted-foreground))" />
 
             <Tooltip
               contentStyle={{
-                backgroundColor: "#18181b",
-                border: "1px solid #333",
+                backgroundColor: "hsl(var(--card))",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: "10px",
+                color: "white"
               }}
             />
 
