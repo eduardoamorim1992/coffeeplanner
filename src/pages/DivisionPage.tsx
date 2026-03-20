@@ -171,25 +171,18 @@ export default function DivisionPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background overflow-hidden">
       <AppSidebar />
 
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col overflow-hidden">
         <AppHeader divisionName={division.name} />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-4">
-
-          {/* 🔥 TICKER */}
+        <main className="flex-1 p-4 md:p-6 space-y-4 w-full overflow-y-auto flex flex-col">
           <MarketTicker />
-
-          {/* 🔥 FRASE */}
           <MotivationalBar />
 
-          {/* 🔥 BOTÕES */}
-          <div className="flex items-center justify-between">
-
-            <div className="flex items-center gap-2 bg-zinc-900/60 backdrop-blur-md border border-zinc-700 rounded-xl p-1 shadow-lg">
-
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 bg-zinc-900/60 backdrop-blur-md border border-zinc-700 rounded-xl p-1 shadow-lg">
               <button
                 onClick={() => setViewMode("month")}
                 className={`px-4 py-1.5 rounded-lg text-sm transition ${
@@ -218,14 +211,14 @@ export default function DivisionPage() {
               >
                 Replicar próximo mês
               </button>
-
             </div>
           </div>
 
-          {/* 🔥 CONTEÚDO */}
           {viewMode === "month" ? (
-            <div className="flex gap-6">
-              <div className="w-[700px]">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
+              
+              {/* Calendário: 7 ou 8 colunas dependendo do tamanho da tela */}
+              <div className="lg:col-span-7 xl:col-span-7 2xl:col-span-8 w-full h-full flex flex-col min-h-0">
                 <MonthlyView
                   calendarData={calendarData}
                   onSelectDate={(date) => {
@@ -235,17 +228,23 @@ export default function DivisionPage() {
                 />
               </div>
 
-              <div className="w-[350px]">
+              {/* Gráfico: 5 ou 4 colunas preenchendo o restante e ficando mais próximo */}
+              <div className="lg:col-span-5 xl:col-span-5 2xl:col-span-4 w-full h-full flex flex-col min-h-0">
                 <MonthlyChart calendarData={calendarData} />
               </div>
+
             </div>
           ) : (
-            <WeeklyView
-              calendarData={calendarData}
-              setCalendarData={setCalendarData}
-              selectedDate={selectedDate}
-              divisionId={divisionId}
-            />
+            <div className="w-full overflow-x-auto flex-1 min-h-0">
+              <div className="min-w-[1200px] h-full">
+                <WeeklyView
+                  calendarData={calendarData}
+                  setCalendarData={setCalendarData}
+                  selectedDate={selectedDate}
+                  divisionId={divisionId}
+                />
+              </div>
+            </div>
           )}
         </main>
       </div>

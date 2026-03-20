@@ -9,7 +9,7 @@ type MarketItem = {
 export function MarketTicker() {
   const [data, setData] = useState<MarketItem[]>([]);
 
-  const API_KEY = "f402727c80b7400686f1bef9be0f11b8"; // 🔥 COLOCA SUA NOVA KEY (gera outra!)
+  const API_KEY = "f402727c80b7400686f1bef9be0f11b8"; // 
 
   async function fetchQuote(symbol: string) {
     try {
