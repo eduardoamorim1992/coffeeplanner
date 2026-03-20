@@ -1,7 +1,7 @@
 import type { Config } from "tailwindcss";
 
 export default {
-  darkMode: ["class"], // 🔥 mais robusto que string simples
+  darkMode: ["class"],
 
   content: [
     "./index.html",
@@ -81,9 +81,11 @@ export default {
           DEFAULT: "hsl(var(--sidebar-background) / <alpha-value>)",
           foreground: "hsl(var(--sidebar-foreground) / <alpha-value>)",
           primary: "hsl(var(--sidebar-primary) / <alpha-value>)",
-          "primary-foreground": "hsl(var(--sidebar-primary-foreground) / <alpha-value>)",
+          "primary-foreground":
+            "hsl(var(--sidebar-primary-foreground) / <alpha-value>)",
           accent: "hsl(var(--sidebar-accent) / <alpha-value>)",
-          "accent-foreground": "hsl(var(--sidebar-accent-foreground) / <alpha-value>)",
+          "accent-foreground":
+            "hsl(var(--sidebar-accent-foreground) / <alpha-value>)",
           border: "hsl(var(--sidebar-border) / <alpha-value>)",
           ring: "hsl(var(--sidebar-ring) / <alpha-value>)",
         },
@@ -120,6 +122,12 @@ export default {
           "0%, 100%": { opacity: "1" },
           "50%": { opacity: "0.6" },
         },
+
+        /* 🔥 CORRETO PARA LOOP INFINITO */
+        marquee: {
+          "0%": { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
 
       animation: {
@@ -128,6 +136,9 @@ export default {
         "fade-in": "fade-in 0.4s ease-out",
         "slide-in": "slide-in 0.3s ease-out",
         "pulse-glow": "pulse-glow 2s ease-in-out infinite",
+
+        /* 🔥 TICKER SUAVE */
+        marquee: "marquee 25s linear infinite",
       },
     },
   },

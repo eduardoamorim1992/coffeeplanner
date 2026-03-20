@@ -4,6 +4,7 @@ import { WeeklyView } from "@/components/WeeklyView";
 import { MonthlyView } from "@/components/MonthlyView";
 import { MonthlyChart } from "@/components/MonthlyChart";
 import { MotivationalBar } from "@/components/MotivationalBar";
+import { MarketTicker } from "@/components/MarketTicker";
 import { AppHeader } from "@/components/AppHeader";
 import AppSidebar from "@/components/AppSidebar";
 import { supabase } from "@/lib/supabase";
@@ -21,9 +22,7 @@ function getWeekdayOccurrenceInMonth(date: Date) {
 
   for (let day = 1; day <= date.getDate(); day++) {
     const current = new Date(date.getFullYear(), date.getMonth(), day);
-    if (current.getDay() === weekday) {
-      occurrence++;
-    }
+    if (current.getDay() === weekday) occurrence++;
   }
 
   return occurrence;
@@ -44,10 +43,7 @@ function getNthWeekdayOfMonth(
 
     if (current.getDay() === weekday) {
       count++;
-
-      if (count === occurrence) {
-        return current;
-      }
+      if (count === occurrence) return current;
     }
   }
 
@@ -56,7 +52,6 @@ function getNthWeekdayOfMonth(
 
 export default function DivisionPage() {
   const { divisionId } = useParams<{ divisionId: string }>();
-
   const division = getDivision(divisionId || "central");
 
   if (!division) return <Navigate to="/central" replace />;
@@ -107,7 +102,7 @@ export default function DivisionPage() {
     if (!divisionId) return;
 
     const confirmAction = confirm(
-      "Replicar todas as atividades deste mês para o próximo mês respeitando o dia da semana?"
+      "Replicar todas as atividades deste mês para o próximo mês?"
     );
 
     if (!confirmAction) return;
@@ -120,94 +115,58 @@ export default function DivisionPage() {
       2,
       "0"
     )}-01`;
+
     const endMonth = `${currentYear}-${String(currentMonth + 1).padStart(
       2,
       "0"
     )}-31`;
 
-    const { data, error } = await supabase
+    const { data } = await supabase
       .from("atividades")
       .select("*")
       .eq("division_id", divisionId)
       .gte("data", startMonth)
       .lte("data", endMonth);
 
-    if (error) {
-      console.error(error);
-      alert("Erro ao buscar atividades do mês.");
-      return;
-    }
-
-    if (!data || data.length === 0) {
-      alert("Não há atividades neste mês para replicar.");
-      return;
-    }
-
     const inserts: any[] = [];
 
-    for (const task of data) {
+    data?.forEach((task) => {
       const originalDate = new Date(`${task.data}T00:00:00`);
       const weekday = originalDate.getDay();
       const occurrence = getWeekdayOccurrenceInMonth(originalDate);
 
       const nextMonth = originalDate.getMonth() + 1;
       const nextYear =
-        nextMonth > 11 ? originalDate.getFullYear() + 1 : originalDate.getFullYear();
-      const normalizedNextMonth = nextMonth > 11 ? 0 : nextMonth;
+        nextMonth > 11
+          ? originalDate.getFullYear() + 1
+          : originalDate.getFullYear();
+
+      const normalizedMonth = nextMonth > 11 ? 0 : nextMonth;
 
       const targetDate = getNthWeekdayOfMonth(
         nextYear,
-        normalizedNextMonth,
+        normalizedMonth,
         weekday,
         occurrence
       );
 
-      if (!targetDate) continue;
+      if (!targetDate) return;
 
-      const iso = formatDateLocal(targetDate);
+      inserts.push({
+        division_id: divisionId,
+        data: formatDateLocal(targetDate),
+        hora: task.hora,
+        titulo: task.titulo,
+        prioridade: task.prioridade,
+        completed: false,
+      });
+    });
 
-      const { data: existing, error: existingError } = await supabase
-        .from("atividades")
-        .select("id")
-        .eq("division_id", divisionId)
-        .eq("data", iso)
-        .eq("titulo", task.titulo)
-        .maybeSingle();
+    if (inserts.length === 0) return;
 
-      if (existingError) {
-        console.error(existingError);
-        continue;
-      }
+    await supabase.from("atividades").insert(inserts);
 
-      if (!existing) {
-        inserts.push({
-          division_id: divisionId,
-          data: iso,
-          hora: task.hora,
-          titulo: task.titulo,
-          prioridade: task.prioridade,
-          completed: false,
-        });
-      }
-    }
-
-    if (inserts.length === 0) {
-      alert("Nenhuma nova atividade para replicar. Elas já existem no próximo mês.");
-      return;
-    }
-
-    const { error: insertError } = await supabase
-      .from("atividades")
-      .insert(inserts);
-
-    if (insertError) {
-      console.error(insertError);
-      alert("Erro ao replicar atividades.");
-      return;
-    }
-
-    alert("Atividades replicadas para o próximo mês respeitando o dia da semana.");
-
+    alert("Replicado com sucesso!");
     loadTasks();
   }
 
@@ -218,40 +177,52 @@ export default function DivisionPage() {
       <div className="flex-1 flex flex-col">
         <AppHeader divisionName={division.name} />
 
-        <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        <main className="flex-1 overflow-y-auto p-6 space-y-4">
+
+          {/* 🔥 TICKER */}
+          <MarketTicker />
+
+          {/* 🔥 FRASE */}
           <MotivationalBar />
 
-          <div className="flex gap-3 items-center">
-            <button
-              onClick={() => setViewMode("month")}
-              className={`px-4 py-2 rounded ${
-                viewMode === "month"
-                  ? "bg-primary text-white"
-                  : "bg-muted"
-              }`}
-            >
-              Mensal
-            </button>
+          {/* 🔥 BOTÕES */}
+          <div className="flex items-center justify-between">
 
-            <button
-              onClick={() => setViewMode("week")}
-              className={`px-4 py-2 rounded ${
-                viewMode === "week"
-                  ? "bg-primary text-white"
-                  : "bg-muted"
-              }`}
-            >
-              Semana
-            </button>
+            <div className="flex items-center gap-2 bg-zinc-900/60 backdrop-blur-md border border-zinc-700 rounded-xl p-1 shadow-lg">
 
-            <button
-              onClick={replicateNextMonth}
-              className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition"
-            >
-              Replicar próximo mês
-            </button>
+              <button
+                onClick={() => setViewMode("month")}
+                className={`px-4 py-1.5 rounded-lg text-sm transition ${
+                  viewMode === "month"
+                    ? "bg-zinc-800 text-white"
+                    : "text-zinc-400 hover:bg-zinc-800"
+                }`}
+              >
+                Mensal
+              </button>
+
+              <button
+                onClick={() => setViewMode("week")}
+                className={`px-4 py-1.5 rounded-lg text-sm transition ${
+                  viewMode === "week"
+                    ? "bg-red-500 text-white"
+                    : "text-zinc-400 hover:bg-zinc-800"
+                }`}
+              >
+                Semana
+              </button>
+
+              <button
+                onClick={replicateNextMonth}
+                className="px-4 py-1.5 rounded-lg text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+              >
+                Replicar próximo mês
+              </button>
+
+            </div>
           </div>
 
+          {/* 🔥 CONTEÚDO */}
           {viewMode === "month" ? (
             <div className="flex gap-6">
               <div className="w-[700px]">

@@ -66,7 +66,6 @@ export function WeeklyView({
     }
   }, []);
 
-  /* 🔔 ALERTA */
   useEffect(() => {
 
     const interval = setInterval(() => {
@@ -134,7 +133,6 @@ export function WeeklyView({
 
   }
 
-  /* ➕ ADD */
   async function addTask(dayDate: string, title: string, priority: any, time: string) {
 
     if (!divisionId) return;
@@ -170,7 +168,6 @@ export function WeeklyView({
 
   }
 
-  /* ✅ TOGGLE CORRIGIDO */
   async function toggleTask(dayDate: string, taskId: string) {
 
     const tasks = calendarData[dayDate] || [];
@@ -179,15 +176,10 @@ export function WeeklyView({
 
     const newStatus = !task.completed;
 
-    const { error } = await supabase
+    await supabase
       .from("atividades")
       .update({ completed: newStatus })
       .eq("id", taskId);
-
-    if (error) {
-      console.error(error);
-      return;
-    }
 
     setCalendarData((prev) => ({
       ...prev,
@@ -200,7 +192,6 @@ export function WeeklyView({
 
   }
 
-  /* 🗑 DELETE */
   async function deleteTask(dayDate: string, taskId: string) {
 
     await supabase
@@ -217,7 +208,6 @@ export function WeeklyView({
 
   }
 
-  /* 🔁 REPLICAR */
   async function replicateTask(task: Task, startDate: string) {
 
     if (!divisionId) return;
@@ -285,26 +275,30 @@ export function WeeklyView({
   }
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="w-full pb-2">
 
-      {week.map((day, i) => (
+      {/* 🔥 FULL WIDTH CORRETO */}
+      <div className="grid grid-cols-7 gap-2 w-full">
 
-        <WeekCard
-          key={day.date}
-          day={day}
-          isToday={false}
-          index={i}
+        {week.map((day, i) => (
 
-          onToggleTask={(id) => toggleTask(day.date, id)}
-          onDeleteTask={(id) => deleteTask(day.date, id)}
-          onAddTask={(t, p, time) => addTask(day.date, t, p, time)}
-          onReplicateTask={(task) => replicateTask(task, day.date)}
+          <WeekCard
+            key={day.date}
+            day={day}
+            isToday={false}
+            index={i}
 
-        />
+            onToggleTask={(id) => toggleTask(day.date, id)}
+            onDeleteTask={(id) => deleteTask(day.date, id)}
+            onAddTask={(t, p, time) => addTask(day.date, t, p, time)}
+            onReplicateTask={(task) => replicateTask(task, day.date)}
 
-      ))}
+          />
+
+        ))}
+
+      </div>
 
     </div>
   );
-
 }

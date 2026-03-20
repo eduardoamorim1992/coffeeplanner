@@ -23,15 +23,9 @@ import {
   TrendingUp,
 } from "lucide-react";
 
-interface Task {
-  completed: boolean;
-  data: string;
-  division_id: string;
-}
-
 export default function Dashboard() {
   const [globalCalendarData, setGlobalCalendarData] =
-    useState<Record<string, Record<string, Task[]>>>({});
+    useState<Record<string, Record<string, any[]>>>({});
 
   const [stats, setStats] = useState({
     total: 0,
@@ -40,6 +34,7 @@ export default function Dashboard() {
   });
 
   const [chartData, setChartData] = useState<any[]>([]);
+  const [range, setRange] = useState<"7" | "30" | "365">("7");
 
   useEffect(() => {
     async function loadData() {
@@ -52,7 +47,7 @@ export default function Dashboard() {
         return;
       }
 
-      const globalData: Record<string, Record<string, Task[]>> = {};
+      const globalData: Record<string, Record<string, any[]>> = {};
 
       let total = 0;
       let completed = 0;
@@ -66,24 +61,20 @@ export default function Dashboard() {
         const date = task.data;
         const divisionId = task.division_id || "sem-divisao";
 
-        // Agrupar por divisão
         if (!globalData[divisionId]) {
           globalData[divisionId] = {};
         }
 
-        // Agrupar por data
         if (!globalData[divisionId][date]) {
           globalData[divisionId][date] = [];
         }
 
         globalData[divisionId][date].push(task);
 
-        // Gráfico
         if (!daily[date]) {
           daily[date] = { c: 0, p: 0 };
         }
 
-        // ✅ CORREÇÃO AQUI
         if (task.completed) {
           completed++;
           daily[date].c++;
@@ -93,9 +84,11 @@ export default function Dashboard() {
         }
       });
 
+      const daysLimit = parseInt(range);
+
       const sorted = Object.entries(daily)
         .sort(([a], [b]) => a.localeCompare(b))
-        .slice(-10);
+        .slice(-daysLimit);
 
       const chart = sorted.map(([date, val]) => ({
         day: date.slice(8),
@@ -109,7 +102,7 @@ export default function Dashboard() {
     }
 
     loadData();
-  }, []);
+  }, [range]);
 
   const rate =
     stats.total > 0
@@ -124,7 +117,7 @@ export default function Dashboard() {
         <AppHeader divisionName="Dashboard Executivo" />
 
         <main className="flex-1 overflow-y-auto p-8 space-y-10 bg-muted/30">
-
+          
           {/* KPIs */}
           <div className="grid grid-cols-4 gap-6">
 
@@ -170,9 +163,31 @@ export default function Dashboard() {
 
           {/* GRÁFICO */}
           <div className="bg-card border border-border rounded-xl p-6">
-            <h3 className="text-lg font-semibold mb-4">
-              Performance operacional (últimos dias)
-            </h3>
+            
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">
+                Performance operacional
+              </h3>
+
+              {/* FILTRO */}
+              <div className="flex gap-2">
+                {["7", "30", "365"].map((r) => (
+                  <button
+                    key={r}
+                    onClick={() => setRange(r as any)}
+                    className={`px-3 py-1 rounded text-xs ${
+                      range === r
+                        ? "bg-primary text-white"
+                        : "bg-muted"
+                    }`}
+                  >
+                    {r === "7" && "7 dias"}
+                    {r === "30" && "30 dias"}
+                    {r === "365" && "1 ano"}
+                  </button>
+                ))}
+              </div>
+            </div>
 
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
@@ -190,6 +205,8 @@ export default function Dashboard() {
                     dataKey="concluido"
                     stroke="#22c55e"
                     strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
                     name="Concluídas"
                   />
 
@@ -198,11 +215,15 @@ export default function Dashboard() {
                     dataKey="pendente"
                     stroke="#ef4444"
                     strokeWidth={3}
+                    dot={{ r: 4 }}
+                    activeDot={{ r: 6 }}
                     name="Pendentes"
                   />
+
                 </LineChart>
               </ResponsiveContainer>
             </div>
+
           </div>
 
           {/* ANÁLISE */}
@@ -212,7 +233,6 @@ export default function Dashboard() {
             </h3>
 
             <div className="grid grid-cols-2 gap-8">
-
               <div className="bg-card border border-border rounded-xl p-6">
                 <RankingBoard globalCalendarData={globalCalendarData} />
               </div>
@@ -220,7 +240,6 @@ export default function Dashboard() {
               <div className="bg-card border border-border rounded-xl p-6">
                 <AlertsPanel globalCalendarData={globalCalendarData} />
               </div>
-
             </div>
           </div>
 

@@ -34,7 +34,7 @@ export function MotivationalBar() {
       setTimeout(() => {
         setIndex((prev) => (prev + 1) % frases.length);
         setFade(true);
-      }, 300);
+      }, 200);
     }, 5000);
 
     return () => clearInterval(interval);
@@ -43,20 +43,22 @@ export function MotivationalBar() {
   const fraseAtual = frases[index];
 
   return (
-    <div className="bg-gradient-to-r from-zinc-900 to-zinc-800 border border-zinc-700 rounded-xl p-6 shadow-lg">
+    <div className="relative overflow-hidden rounded-lg border border-border bg-gradient-to-r from-zinc-900 to-zinc-800 px-4 py-2">
+
       <div
         className={`transition-opacity duration-300 ${
           fade ? "opacity-100" : "opacity-0"
         }`}
       >
-        <p className="text-lg font-semibold text-white tracking-wide text-center">
+        <p className="text-sm text-center text-white font-medium leading-snug">
           "{fraseAtual.text}"
         </p>
 
-        <p className="mt-3 text-sm text-zinc-400 text-center italic">
+        <p className="text-[11px] text-zinc-400 text-center italic mt-1">
           — {fraseAtual.author}
         </p>
       </div>
+
     </div>
   );
 }
