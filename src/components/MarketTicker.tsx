@@ -1,68 +1,91 @@
 import { useEffect, useState } from "react";
 
-export function MarketTicker() {
-  const [data, setData] = useState<any[]>([]);
+type MarketItem = {
+  name: string;
+  value: string;
+  change: number;
+};
 
-  const API_KEY = "SUA_API_KEY_AQUI"; // 🔥 coloca sua key
+export function MarketTicker() {
+  const [data, setData] = useState<MarketItem[]>([]);
+
+  const API_KEY = "f402727c80b7400686f1bef9be0f11b8"; // 🔥 COLOCA SUA NOVA KEY (gera outra!)
+
+  async function fetchQuote(symbol: string) {
+    try {
+      const res = await fetch(
+        `https://api.twelvedata.com/quote?symbol=${symbol}&apikey=${API_KEY}`
+      );
+      const json = await res.json();
+
+      if (json.status === "error") {
+        console.error("Erro TwelveData:", json);
+        return null;
+      }
+
+      return {
+        price: Number(json.close),
+        change: Number(json.percent_change),
+      };
+    } catch (err) {
+      console.error("Erro fetch:", err);
+      return null;
+    }
+  }
 
   async function loadData() {
     try {
-      // 🔥 COMMODITIES REAIS
-      const commoditiesRes = await fetch(
-        `https://commodities-api.com/api/latest?access_key=${API_KEY}&symbols=SOYBEAN,CORN,SUGAR`
-      );
-
-      const commodities = await commoditiesRes.json();
-
-      // 🔥 DÓLAR REAL
-      const dolarRes = await fetch(
-        "https://economia.awesomeapi.com.br/json/last/USD-BRL"
-      );
-
-      const dolarJson = await dolarRes.json();
-      const dolar = dolarJson.USDBRL;
-
-      setData([
-        {
-          name: "Dólar",
-          value: Number(dolar.bid).toFixed(2),
-          change: Number(dolar.pctChange),
-        },
-        {
-          name: "Soja",
-          value: commodities.data.rates.SOYBEAN.toFixed(2),
-          change: Math.random() * 2 - 1, // algumas APIs não trazem variação
-        },
-        {
-          name: "Milho",
-          value: commodities.data.rates.CORN.toFixed(2),
-          change: Math.random() * 2 - 1,
-        },
-        {
-          name: "Açúcar",
-          value: commodities.data.rates.SUGAR.toFixed(2),
-          change: Math.random() * 2 - 1,
-        },
+      const [dolar, soja, milho, acucar] = await Promise.all([
+        fetchQuote("USD/BRL"),
+        fetchQuote("ZS"), // soja
+        fetchQuote("ZC"), // milho
+        fetchQuote("SB"), // açúcar
       ]);
+
+      const newData: MarketItem[] = [
+        {
+          name: "💵 Dólar",
+          value: dolar ? dolar.price.toFixed(2) : "--",
+          change: dolar ? dolar.change : 0,
+        },
+        {
+          name: "🌱 Soja",
+          value: soja ? soja.price.toFixed(2) : "--",
+          change: soja ? soja.change : 0,
+        },
+        {
+          name: "🌽 Milho",
+          value: milho ? milho.price.toFixed(2) : "--",
+          change: milho ? milho.change : 0,
+        },
+        {
+          name: "🍬 Açúcar",
+          value: acucar ? acucar.price.toFixed(2) : "--",
+          change: acucar ? acucar.change : 0,
+        },
+      ];
+
+      setData(newData);
     } catch (err) {
-      console.error("Erro API:", err);
+      console.error("Erro geral:", err);
     }
   }
 
   useEffect(() => {
     loadData();
-    const interval = setInterval(loadData, 60000);
+    const interval = setInterval(loadData, 60000); // 🔄 atualiza a cada 1 min
     return () => clearInterval(interval);
   }, []);
 
   return (
     <div className="w-full overflow-hidden border-y border-zinc-800 bg-black">
-
-      <div className="flex whitespace-nowrap animate-marquee py-1 text-xs">
+      <div className="flex whitespace-nowrap animate-marquee py-2 text-sm">
 
         {[...data, ...data].map((item, i) => (
-          <div key={i} className="mx-6 flex items-center gap-2">
-
+          <div
+            key={i}
+            className="mx-8 flex items-center gap-3"
+          >
             <span className="text-zinc-400">{item.name}</span>
 
             <span className="text-white font-semibold">
@@ -77,14 +100,12 @@ export function MarketTicker() {
               }`}
             >
               {item.change >= 0 ? "▲" : "▼"}{" "}
-              {Number(item.change).toFixed(2)}%
+              {Math.abs(item.change).toFixed(2)}%
             </span>
-
           </div>
         ))}
 
       </div>
-
     </div>
   );
 }
