@@ -54,40 +54,57 @@ export default function AppSidebar() {
   async function loadUsers() {
     if (!user) return;
 
-    console.log("🔥 auth:", user.email);
-
-    const { data: meData, error } = await supabase
+    const { data: meData } = await supabase
       .from("users")
       .select("*")
       .eq("email", user.email)
       .single();
 
-    if (error || !meData) {
-      console.error("Erro ao buscar usuário:", error);
-      return;
-    }
-
-    console.log("🔥 DB user:", meData);
+    if (!meData) return;
 
     setMe(meData);
 
-    const role = (meData.role || "").toLowerCase().trim();
+    const role = String(meData.role || "").toLowerCase().trim();
 
-    // 🔥 ADMIN / COORDENADOR → VÊ TODOS
-    if (role === "admin" || role === "coordenador") {
+    // 🔥 ADMIN → TODOS
+    if (role === "admin") {
       const { data } = await supabase
         .from("users")
         .select("id, nome, role")
         .order("nome");
 
       setUsers(data || []);
-    } else {
-      // 🔥 ANALISTA → SÓ ELE
+    }
+
+    // 🔥 GESTOR → EQUIPE
+    else if (
+      role === "coordenador" ||
+      role === "supervisor" ||
+      role === "gerente"
+    ) {
+      const { data: relations } = await supabase
+        .from("user_managers")
+        .select("user_id")
+        .eq("manager_id", meData.id);
+
+      const ids = [meData.id, ...(relations?.map((r) => r.user_id) || [])];
+
+      const { data } = await supabase
+        .from("users")
+        .select("id, nome, role")
+        .in("id", ids)
+        .order("nome");
+
+      setUsers(data || []);
+    }
+
+    // 🔥 USUÁRIO NORMAL
+    else {
       setUsers([meData]);
     }
   }
 
-  // 🔥 CONTADOR DE PENDENTES
+  // 🔥 CONTADOR
   async function calculateTotals() {
     const totals: Record<string, number> = {};
 
@@ -105,9 +122,7 @@ export default function AppSidebar() {
   }
 
   useEffect(() => {
-    if (user) {
-      loadUsers();
-    }
+    if (user) loadUsers();
   }, [user]);
 
   useEffect(() => {
@@ -124,7 +139,6 @@ export default function AppSidebar() {
 
   return (
     <>
-      {/* MOBILE BUTTON */}
       <button
         onClick={() => setIsMobileOpen(true)}
         className="md:hidden fixed top-4 left-4 z-50 bg-zinc-900 p-2 rounded"
@@ -139,7 +153,6 @@ export default function AppSidebar() {
         />
       )}
 
-      {/* SIDEBAR */}
       <aside
         className={`
           ${collapsed ? "w-20" : "w-64"}
@@ -157,7 +170,6 @@ export default function AppSidebar() {
         `}
       >
         <div>
-          {/* HEADER */}
           <div className="p-4 flex items-center justify-between border-b border-zinc-800">
             {!collapsed && (
               <span className="text-white font-bold text-lg">
@@ -172,47 +184,37 @@ export default function AppSidebar() {
               {collapsed ? <ChevronRight /> : <ChevronLeft />}
             </button>
 
-            <button
-              onClick={() => setIsMobileOpen(false)}
-              className="md:hidden"
-            >
+            <button onClick={() => setIsMobileOpen(false)} className="md:hidden">
               <X />
             </button>
           </div>
 
-          {/* MENU */}
           <div className="p-2 space-y-2">
+            {/* DASHBOARD */}
+            {me?.role === "admin" && (
+              <button
+                onClick={() => navigate("/dashboard")}
+                className={`flex items-center gap-3 w-full px-3 py-2 rounded text-sm ${
+                  location.pathname === "/dashboard"
+                    ? "bg-red-600 text-white"
+                    : "text-zinc-400 hover:bg-zinc-800"
+                }`}
+              >
+                <LayoutDashboard size={18} />
+                {!collapsed && "Dashboard"}
+              </button>
+            )}
 
-            {/* DASHBOARD (SÓ ADMIN/COORDENADOR) */}
-            {me &&
-              (me.role?.toLowerCase().trim() === "admin" ||
-                me.role?.toLowerCase().trim() === "coordenador") && (
-                <button
-                  onClick={() => navigate("/dashboard")}
-                  className={`flex items-center gap-3 w-full px-3 py-2 rounded text-sm transition
-                  ${
-                    location.pathname === "/dashboard"
-                      ? "bg-red-600 text-white"
-                      : "text-zinc-400 hover:bg-zinc-800"
-                  }`}
-                >
-                  <LayoutDashboard size={18} />
-                  {!collapsed && "Dashboard"}
-                </button>
-              )}
-
-            {/* USERS */}
+            {/* USUÁRIOS */}
             {users.map((u) => {
               const pending = pendingTotals[u.id] || 0;
-              const isActive =
-                location.pathname === `/user/${u.id}`;
+              const isActive = location.pathname === `/user/${u.id}`;
 
               return (
                 <button
                   key={u.id}
                   onClick={() => navigate(`/user/${u.id}`)}
-                  className={`flex items-center justify-between w-full px-3 py-2 rounded text-sm transition
-                  ${
+                  className={`flex items-center justify-between w-full px-3 py-2 rounded text-sm ${
                     isActive
                       ? "bg-red-600 text-white"
                       : "text-zinc-400 hover:bg-zinc-800"
@@ -222,11 +224,11 @@ export default function AppSidebar() {
                     <User size={18} />
 
                     {!collapsed && (
-                      <div className="flex flex-col text-left">
-                        <span>{u.nome}</span>
-                        <span className="text-[10px] text-zinc-500">
+                      <div>
+                        <div>{u.nome}</div>
+                        <div className="text-xs text-zinc-500">
                           {u.role}
-                        </span>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -242,16 +244,15 @@ export default function AppSidebar() {
           </div>
         </div>
 
-        {/* FOOTER */}
+        {/* 🔥 FOOTER COM CONFIGURAÇÕES */}
         <div className="p-2 border-t border-zinc-800 space-y-2">
-
-          {me?.role?.toLowerCase().trim() === "admin" && (
+          {me?.role === "admin" && (
             <button
               onClick={() => navigate("/admin/users")}
               className="flex items-center gap-3 w-full px-3 py-2 rounded text-sm text-zinc-400 hover:bg-zinc-800"
             >
               <Settings size={18} />
-              {!collapsed && "Configurações"}
+              {!collapsed && "Gerenciar Usuários"}
             </button>
           )}
 
@@ -262,7 +263,6 @@ export default function AppSidebar() {
             <LogOut size={18} />
             {!collapsed && "Sair"}
           </button>
-
         </div>
       </aside>
     </>

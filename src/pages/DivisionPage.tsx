@@ -84,23 +84,26 @@ export default function DivisionPage() {
   );
   const [userName, setUserName] = useState("");
   const [loadingReplicate, setLoadingReplicate] = useState(false);
+  const [me, setMe] = useState<any>(null);
 
-  // 🔥 FUNÇÃO CORRIGIDA DE VER PERMISSÕES
+  // 🔥 CARREGAR ATIVIDADES COM PERMISSÃO
   async function loadTasks() {
-    const me = await getLoggedUser();
-    if (!me) return;
+    const meData = await getLoggedUser();
+    if (!meData) return;
 
-    const role = String(me.role || "").toLowerCase().trim();
+    setMe(meData);
 
-    let userIds: string[] = [];
+    const role = String(meData.role || "").toLowerCase().trim();
 
-    // 🔥 ADMIN → vê tudo
+    let allowedUserIds: string[] = [];
+
+    // 🔥 ADMIN
     if (role === "admin") {
       const { data } = await supabase.from("users").select("id");
-      userIds = data?.map((u) => u.id) || [];
+      allowedUserIds = data?.map((u) => u.id) || [];
     }
 
-    // 🔥 GESTORES → só subordinados
+    // 🔥 GESTOR
     else if (
       role === "coordenador" ||
       role === "supervisor" ||
@@ -109,19 +112,20 @@ export default function DivisionPage() {
       const { data } = await supabase
         .from("user_managers")
         .select("user_id")
-        .eq("manager_id", me.id);
+        .eq("manager_id", meData.id);
 
-      userIds = [me.id, ...(data?.map((d) => d.user_id) || [])];
+      allowedUserIds = [meData.id, ...(data?.map((d) => d.user_id) || [])];
     }
 
-    // 🔥 USUÁRIO NORMAL
+    // 🔥 NORMAL
     else {
-      userIds = [me.id];
+      allowedUserIds = [meData.id];
     }
 
-    // 🔥 SE CLICAR EM UM USUÁRIO
-    if (userId) {
-      userIds = [userId];
+    let finalUserIds = allowedUserIds;
+
+    if (userId && allowedUserIds.includes(userId)) {
+      finalUserIds = [userId];
 
       const { data: userData } = await supabase
         .from("users")
@@ -131,14 +135,13 @@ export default function DivisionPage() {
 
       setUserName(userData?.nome || "");
     } else {
-      setUserName(me.nome);
+      setUserName(meData.nome);
     }
 
-    // 🔥 BUSCAR ATIVIDADES
     const { data: tasks } = await supabase
       .from("atividades")
       .select("*")
-      .in("user_id", userIds);
+      .in("user_id", finalUserIds);
 
     const grouped: Record<string, any[]> = {};
 
@@ -161,24 +164,29 @@ export default function DivisionPage() {
     loadTasks();
   }, [userId]);
 
-  // 🔥 REPLICAR MÊS (mantido)
+  // 🔥 REPLICAR (SOMENTE DO USUÁRIO LOGADO)
   async function replicateMonth() {
     const confirm = window.confirm(
-      "Deseja copiar todas as atividades para o próximo mês?"
+      "Deseja copiar apenas SUAS atividades para o próximo mês?"
     );
     if (!confirm) return;
 
     setLoadingReplicate(true);
 
-    const me = await getLoggedUser();
-    if (!me) return;
+    if (!me) {
+      setLoadingReplicate(false);
+      return;
+    }
 
     const { data: tasks } = await supabase
       .from("atividades")
       .select("*")
-      .eq("user_id", me.id);
+      .eq("user_id", me.id); // 🔥 GARANTIDO
 
-    if (!tasks) return;
+    if (!tasks) {
+      setLoadingReplicate(false);
+      return;
+    }
 
     const inserts: any[] = [];
 
@@ -206,7 +214,7 @@ export default function DivisionPage() {
       if (!target) continue;
 
       inserts.push({
-        user_id: me.id,
+        user_id: me.id, // 🔥 SEMPRE ELE
         data: formatDateLocal(target),
         hora: task.hora,
         titulo: task.titulo,
@@ -215,7 +223,9 @@ export default function DivisionPage() {
       });
     }
 
-    await supabase.from("atividades").insert(inserts);
+    if (inserts.length > 0) {
+      await supabase.from("atividades").insert(inserts);
+    }
 
     setLoadingReplicate(false);
     loadTasks();
@@ -232,6 +242,7 @@ export default function DivisionPage() {
           <MarketTicker />
           <MotivationalBar />
 
+          {/* CONTROLES */}
           <div className="flex items-center justify-between">
             <div className="flex bg-muted/30 border rounded-lg p-1">
               <button
@@ -257,14 +268,21 @@ export default function DivisionPage() {
               </button>
             </div>
 
-            <button
-              onClick={replicateMonth}
-              className="bg-blue-600 px-4 py-1.5 rounded"
-            >
-              🔁 Replicar mês
-            </button>
+            {/* 🔥 BOTÃO CORRETO */}
+            {(!userId || userId === me?.id) && (
+              <button
+                onClick={replicateMonth}
+                disabled={loadingReplicate}
+                className="bg-blue-600 px-4 py-1.5 rounded text-white hover:bg-blue-700"
+              >
+                {loadingReplicate
+                  ? "Copiando..."
+                  : "🔁 Replicar mês"}
+              </button>
+            )}
           </div>
 
+          {/* VIEWS */}
           {viewMode === "month" ? (
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-8">
