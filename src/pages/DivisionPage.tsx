@@ -1,5 +1,4 @@
-import { useParams, Navigate } from "react-router-dom";
-import { getDivision } from "@/data/mockData";
+import { useParams } from "react-router-dom";
 import { WeeklyView } from "@/components/WeeklyView";
 import { MonthlyView } from "@/components/MonthlyView";
 import { MonthlyChart } from "@/components/MonthlyChart";
@@ -10,25 +9,34 @@ import AppSidebar from "@/components/AppSidebar";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState } from "react";
 
+// 🔥 FORMATAR DATA
 function formatDateLocal(date: Date) {
   return `${date.getFullYear()}-${String(
     date.getMonth() + 1
   ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 }
 
-function getWeekdayOccurrenceInMonth(date: Date) {
-  const weekday = date.getDay();
-  let occurrence = 0;
-
-  for (let day = 1; day <= date.getDate(); day++) {
-    const current = new Date(date.getFullYear(), date.getMonth(), day);
-    if (current.getDay() === weekday) occurrence++;
-  }
-
-  return occurrence;
+// 🔥 PARSE DATA
+function parseLocalDate(dateString: string) {
+  const [year, month, day] = dateString.split("-").map(Number);
+  return new Date(year, month - 1, day);
 }
 
-function getNthWeekdayOfMonth(
+// 🔥 OCORRÊNCIA DO DIA
+function getWeekdayOccurrence(date: Date) {
+  const weekday = date.getDay();
+  let count = 0;
+
+  for (let d = 1; d <= date.getDate(); d++) {
+    const current = new Date(date.getFullYear(), date.getMonth(), d);
+    if (current.getDay() === weekday) count++;
+  }
+
+  return count;
+}
+
+// 🔥 MESMA OCORRÊNCIA NO PRÓXIMO MÊS
+function getNthWeekday(
   year: number,
   month: number,
   weekday: number,
@@ -36,56 +44,111 @@ function getNthWeekdayOfMonth(
 ) {
   let count = 0;
 
-  for (let day = 1; day <= 31; day++) {
-    const current = new Date(year, month, day);
+  for (let d = 1; d <= 31; d++) {
+    const date = new Date(year, month, d);
+    if (date.getMonth() !== month) break;
 
-    if (current.getMonth() !== month) break;
-
-    if (current.getDay() === weekday) {
+    if (date.getDay() === weekday) {
       count++;
-      if (count === occurrence) return current;
+      if (count === occurrence) return date;
     }
   }
 
   return null;
 }
 
-export default function DivisionPage() {
-  const { divisionId } = useParams<{ divisionId: string }>();
-  const division = getDivision(divisionId || "central");
+// 🔥 USUÁRIO LOGADO
+async function getLoggedUser() {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!division) return <Navigate to="/central" replace />;
+  if (!user) return null;
+
+  const { data } = await supabase
+    .from("users")
+    .select("*")
+    .eq("email", user.email)
+    .single();
+
+  return data;
+}
+
+export default function DivisionPage() {
+  const { userId } = useParams();
 
   const [calendarData, setCalendarData] = useState<Record<string, any[]>>({});
   const [viewMode, setViewMode] = useState<"week" | "month">("month");
   const [selectedDate, setSelectedDate] = useState<string>(
     formatDateLocal(new Date())
   );
+  const [userName, setUserName] = useState("");
+  const [loadingReplicate, setLoadingReplicate] = useState(false);
 
+  // 🔥 FUNÇÃO CORRIGIDA DE VER PERMISSÕES
   async function loadTasks() {
-    if (!divisionId) return;
+    const me = await getLoggedUser();
+    if (!me) return;
 
-    const { data, error } = await supabase
+    const role = String(me.role || "").toLowerCase().trim();
+
+    let userIds: string[] = [];
+
+    // 🔥 ADMIN → vê tudo
+    if (role === "admin") {
+      const { data } = await supabase.from("users").select("id");
+      userIds = data?.map((u) => u.id) || [];
+    }
+
+    // 🔥 GESTORES → só subordinados
+    else if (
+      role === "coordenador" ||
+      role === "supervisor" ||
+      role === "gerente"
+    ) {
+      const { data } = await supabase
+        .from("user_managers")
+        .select("user_id")
+        .eq("manager_id", me.id);
+
+      userIds = [me.id, ...(data?.map((d) => d.user_id) || [])];
+    }
+
+    // 🔥 USUÁRIO NORMAL
+    else {
+      userIds = [me.id];
+    }
+
+    // 🔥 SE CLICAR EM UM USUÁRIO
+    if (userId) {
+      userIds = [userId];
+
+      const { data: userData } = await supabase
+        .from("users")
+        .select("nome")
+        .eq("id", userId)
+        .single();
+
+      setUserName(userData?.nome || "");
+    } else {
+      setUserName(me.nome);
+    }
+
+    // 🔥 BUSCAR ATIVIDADES
+    const { data: tasks } = await supabase
       .from("atividades")
       .select("*")
-      .eq("division_id", divisionId);
-
-    if (error) {
-      console.error(error);
-      return;
-    }
+      .in("user_id", userIds);
 
     const grouped: Record<string, any[]> = {};
 
-    data?.forEach((task) => {
-      const date = task.data;
+    tasks?.forEach((task) => {
+      if (!grouped[task.data]) grouped[task.data] = [];
 
-      if (!grouped[date]) grouped[date] = [];
-
-      grouped[date].push({
+      grouped[task.data].push({
         id: task.id,
         title: task.titulo,
-        time: task.hora,
+        time: task.hora ? task.hora.slice(0, 5) : null,
         completed: task.completed,
         priority: task.prioridade,
       });
@@ -96,77 +159,65 @@ export default function DivisionPage() {
 
   useEffect(() => {
     loadTasks();
-  }, [divisionId]);
+  }, [userId]);
 
-  async function replicateNextMonth() {
-    if (!divisionId) return;
-
-    const confirmAction = confirm(
-      "Replicar todas as atividades deste mês para o próximo mês?"
+  // 🔥 REPLICAR MÊS (mantido)
+  async function replicateMonth() {
+    const confirm = window.confirm(
+      "Deseja copiar todas as atividades para o próximo mês?"
     );
+    if (!confirm) return;
 
-    if (!confirmAction) return;
+    setLoadingReplicate(true);
 
-    const now = new Date();
-    const currentMonth = now.getMonth();
-    const currentYear = now.getFullYear();
+    const me = await getLoggedUser();
+    if (!me) return;
 
-    const startMonth = `${currentYear}-${String(currentMonth + 1).padStart(
-      2,
-      "0"
-    )}-01`;
-
-    const endMonth = `${currentYear}-${String(currentMonth + 1).padStart(
-      2,
-      "0"
-    )}-31`;
-
-    const { data } = await supabase
+    const { data: tasks } = await supabase
       .from("atividades")
       .select("*")
-      .eq("division_id", divisionId)
-      .gte("data", startMonth)
-      .lte("data", endMonth);
+      .eq("user_id", me.id);
+
+    if (!tasks) return;
 
     const inserts: any[] = [];
 
-    data?.forEach((task) => {
-      const originalDate = new Date(`${task.data}T00:00:00`);
-      const weekday = originalDate.getDay();
-      const occurrence = getWeekdayOccurrenceInMonth(originalDate);
+    for (const task of tasks) {
+      const original = parseLocalDate(task.data);
 
-      const nextMonth = originalDate.getMonth() + 1;
+      const weekday = original.getDay();
+      const occurrence = getWeekdayOccurrence(original);
+
+      const nextMonth = original.getMonth() + 1;
       const nextYear =
         nextMonth > 11
-          ? originalDate.getFullYear() + 1
-          : originalDate.getFullYear();
+          ? original.getFullYear() + 1
+          : original.getFullYear();
 
       const normalizedMonth = nextMonth > 11 ? 0 : nextMonth;
 
-      const targetDate = getNthWeekdayOfMonth(
+      const target = getNthWeekday(
         nextYear,
         normalizedMonth,
         weekday,
         occurrence
       );
 
-      if (!targetDate) return;
+      if (!target) continue;
 
       inserts.push({
-        division_id: divisionId,
-        data: formatDateLocal(targetDate),
+        user_id: me.id,
+        data: formatDateLocal(target),
         hora: task.hora,
         titulo: task.titulo,
         prioridade: task.prioridade,
         completed: false,
       });
-    });
-
-    if (inserts.length === 0) return;
+    }
 
     await supabase.from("atividades").insert(inserts);
 
-    alert("Replicado com sucesso!");
+    setLoadingReplicate(false);
     loadTasks();
   }
 
@@ -175,50 +226,48 @@ export default function DivisionPage() {
       <AppSidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
-        <AppHeader divisionName={division.name} />
+        <AppHeader divisionName={userName} />
 
-        <main className="flex-1 p-4 md:p-6 space-y-4 w-full overflow-y-auto flex flex-col">
+        <main className="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto">
           <MarketTicker />
           <MotivationalBar />
 
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 shrink-0">
-            <div className="flex flex-wrap items-center gap-2 bg-zinc-900/60 backdrop-blur-md border border-zinc-700 rounded-xl p-1 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex bg-muted/30 border rounded-lg p-1">
               <button
                 onClick={() => setViewMode("month")}
-                className={`px-4 py-1.5 rounded-lg text-sm transition ${
+                className={`px-4 py-1.5 rounded ${
                   viewMode === "month"
-                    ? "bg-zinc-800 text-white"
-                    : "text-zinc-400 hover:bg-zinc-800"
+                    ? "bg-white text-black"
+                    : ""
                 }`}
               >
-                Mensal
+                📅 Mensal
               </button>
 
               <button
                 onClick={() => setViewMode("week")}
-                className={`px-4 py-1.5 rounded-lg text-sm transition ${
+                className={`px-4 py-1.5 rounded ${
                   viewMode === "week"
-                    ? "bg-red-500 text-white"
-                    : "text-zinc-400 hover:bg-zinc-800"
+                    ? "bg-white text-black"
+                    : ""
                 }`}
               >
-                Semana
-              </button>
-
-              <button
-                onClick={replicateNextMonth}
-                className="px-4 py-1.5 rounded-lg text-sm bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
-              >
-                Replicar próximo mês
+                📆 Semana
               </button>
             </div>
+
+            <button
+              onClick={replicateMonth}
+              className="bg-blue-600 px-4 py-1.5 rounded"
+            >
+              🔁 Replicar mês
+            </button>
           </div>
 
           {viewMode === "month" ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 flex-1 min-h-0">
-              
-              {/* Calendário: 7 ou 8 colunas dependendo do tamanho da tela */}
-              <div className="lg:col-span-7 xl:col-span-7 2xl:col-span-8 w-full h-full flex flex-col min-h-0">
+            <div className="grid grid-cols-12 gap-4">
+              <div className="col-span-8">
                 <MonthlyView
                   calendarData={calendarData}
                   onSelectDate={(date) => {
@@ -228,23 +277,16 @@ export default function DivisionPage() {
                 />
               </div>
 
-              {/* Gráfico: 5 ou 4 colunas preenchendo o restante e ficando mais próximo */}
-              <div className="lg:col-span-5 xl:col-span-5 2xl:col-span-4 w-full h-full flex flex-col min-h-0">
+              <div className="col-span-4">
                 <MonthlyChart calendarData={calendarData} />
               </div>
-
             </div>
           ) : (
-            <div className="w-full overflow-x-auto flex-1 min-h-0">
-              <div className="min-w-[1200px] h-full">
-                <WeeklyView
-                  calendarData={calendarData}
-                  setCalendarData={setCalendarData}
-                  selectedDate={selectedDate}
-                  divisionId={divisionId}
-                />
-              </div>
-            </div>
+            <WeeklyView
+              calendarData={calendarData}
+              setCalendarData={setCalendarData}
+              selectedDate={selectedDate}
+            />
           )}
         </main>
       </div>

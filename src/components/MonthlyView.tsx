@@ -60,7 +60,7 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
   }
 
   return (
-    <div className="space-y-6 max-w-4xl ml-6">
+    <div className="space-y-6 w-full h-full flex flex-col">
 
       {/* HEADER */}
       <div className="flex justify-between items-center">
@@ -87,18 +87,19 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
       </div>
 
       {/* DIAS DA SEMANA */}
-      <div className="grid grid-cols-7 gap-3 text-center text-xs text-muted-foreground">
+      <div className="grid grid-cols-7 gap-2 text-center text-xs text-muted-foreground">
         {["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"].map((day) => (
           <div key={day}>{day}</div>
         ))}
       </div>
 
       {/* GRID */}
-      <div className="grid grid-cols-7 gap-3">
+      <div className="grid grid-cols-7 gap-2 flex-1">
+
         {days.map((date, index) => {
 
           if (!date) {
-            return <div key={index} className="h-24 border-transparent" />;
+            return <div key={index} className="h-24" />;
           }
 
           const tasks = calendarData[date] || [];
@@ -133,7 +134,6 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
                 hover:scale-[1.02]
               `}
             >
-              {/* DIA + CONTADOR */}
               <div className="flex justify-between items-start">
                 <span className="text-sm font-semibold">
                   {Number(date.split("-")[2])}
@@ -146,7 +146,6 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
                 )}
               </div>
 
-              {/* INDICADORES */}
               <div className="mt-1 space-y-0.5 text-xs">
 
                 <div className="flex items-center gap-1 flex-wrap">
@@ -174,14 +173,12 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
 
                 </div>
 
-                {/* TEXTO */}
                 {high > 0 && (
                   <div className="text-[10px] text-red-400 font-semibold">
                     Alta prioridade
                   </div>
                 )}
 
-                {/* CONCLUÍDO */}
                 {status === "done" && (
                   <div className="text-[10px] text-green-400 font-semibold">
                     ✔ Concluído

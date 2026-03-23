@@ -1,247 +1,229 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft } from "lucide-react";
 
-interface UserProfile {
-  uid?: string;
-  email: string;
-  division_id: string;
-  role: string;
-  ativo: boolean;
-}
+const ROLES = [
+  "assistente",
+  "analista",
+  "coordenador",
+  "supervisor",
+  "gerente",
+  "admin",
+];
 
 export default function AdminUsers() {
-
   const navigate = useNavigate();
 
-  const [users, setUsers] = useState<UserProfile[]>([]);
+  const [users, setUsers] = useState<any[]>([]);
+  const [relations, setRelations] = useState<any[]>([]);
   const [email, setEmail] = useState("");
-  const [division, setDivision] = useState("central");
-  const [role, setRole] = useState("usuario");
-  const [loading, setLoading] = useState(false);
+  const [role, setRole] = useState("assistente");
 
-  useEffect(() => {
-    loadUsers();
-  }, []);
-
-  async function loadUsers() {
-
-    const { data } = await supabase
-      .from("users_profile")
+  // 🔥 CARREGAR DADOS
+  async function loadData() {
+    const { data: usersData } = await supabase
+      .from("users")
       .select("*")
-      .order("created_at", { ascending: false });
+      .order("nome");
 
-    setUsers(data || []);
+    const { data: relData } = await supabase
+      .from("user_managers")
+      .select("*");
+
+    setUsers(usersData || []);
+    setRelations(relData || []);
   }
 
-  async function createUser() {
+  useEffect(() => {
+    loadData();
+  }, []);
 
-    if (!email) {
-      alert("Digite o email");
-      return;
-    }
+  // 🔥 CRIAR USUÁRIO
+  async function handleCreateUser() {
+    if (!email) return alert("Informe email");
 
-    setLoading(true);
-
-    // verifica se já existe
-    const { data: existing } = await supabase
-      .from("users_profile")
-      .select("email")
-      .eq("email", email)
-      .single();
-
-    if (existing) {
-      alert("Usuário já existe");
-      setLoading(false);
-      return;
-    }
-
-    // cria no AUTH
     const { data, error } = await supabase.auth.signUp({
-      email: email,
+      email,
       password: "123456",
     });
 
     if (error) {
       alert(error.message);
-      setLoading(false);
       return;
     }
 
-    if (!data.user) {
-      alert("Erro ao criar usuário");
-      setLoading(false);
-      return;
-    }
-
-    // grava no users_profile
-    const { error: insertError } = await supabase
-      .from("users_profile")
-      .insert({
-        uid: data.user.id,
-        email: email,
-        role: role,
-        division_id: division,
-        ativo: true,
-        first_login: true
-      });
-
-    if (insertError) {
-      alert(insertError.message);
-      setLoading(false);
-      return;
-    }
-
-    alert("Usuário criado! Senha inicial: 123456");
+    await supabase.from("users").insert({
+      auth_id: data.user?.id,
+      email,
+      nome: email.split("@")[0],
+      role,
+      ativo: true,
+    });
 
     setEmail("");
-    setLoading(false);
-
-    loadUsers();
+    loadData();
   }
 
-  async function updateUser(user: UserProfile, field: string, value: any) {
-
+  // 🔥 ATUALIZAR ROLE
+  async function updateRole(id: string, newRole: string) {
     await supabase
-      .from("users_profile")
-      .update({ [field]: value })
-      .eq("email", user.email);
+      .from("users")
+      .update({ role: newRole })
+      .eq("id", id);
 
-    loadUsers();
+    loadData();
   }
 
-  async function deleteUser(user: UserProfile) {
+  // 🔥 ADICIONAR GESTOR
+  async function addManager(userId: string, managerId: string) {
+    await supabase.from("user_managers").insert({
+      user_id: userId,
+      manager_id: managerId,
+    });
 
-    if (!confirm("Deseja excluir o usuário?")) return;
+    loadData();
+  }
 
+  // 🔥 REMOVER GESTOR
+  async function removeManager(userId: string, managerId: string) {
     await supabase
-      .from("users_profile")
+      .from("user_managers")
       .delete()
-      .eq("email", user.email);
+      .eq("user_id", userId)
+      .eq("manager_id", managerId);
 
-    loadUsers();
+    loadData();
+  }
+
+  // 🔥 PEGAR GESTORES DO USUÁRIO
+  function getManagers(userId: string) {
+    return relations
+      .filter((r) => r.user_id === userId)
+      .map((r) => r.manager_id);
   }
 
   return (
-    <div className="p-8 space-y-8">
-
-      <button
-        onClick={() => navigate("/dashboard")}
-        className="flex items-center gap-2 text-sm text-zinc-400 hover:text-white transition"
-      >
-        <ArrowLeft size={16} />
-        Voltar
+    <div className="p-6 text-white">
+      <button onClick={() => navigate("/dashboard")}>
+        ← Voltar
       </button>
 
-      <h1 className="text-2xl font-bold flex items-center gap-2">
-        ⚙️ Gerenciar Usuários
-      </h1>
+      <h1 className="text-xl mb-4">⚙ Gerenciar Usuários</h1>
 
-      <div className="flex flex-wrap gap-4 items-end border p-4 rounded-lg bg-muted/10">
-
+      {/* FORM */}
+      <div className="flex gap-2 mb-6">
         <input
-          type="email"
-          placeholder="Email do usuário"
+          placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="border px-3 py-2 rounded text-black bg-white"
+          className="px-3 py-2 rounded bg-zinc-800"
         />
-
-        <select
-          value={division}
-          onChange={(e) => setDivision(e.target.value)}
-          className="border px-3 py-2 rounded text-black bg-white"
-        >
-          <option value="central">Central</option>
-          <option value="planejamento">Planejamento</option>
-          <option value="laboratorio-oleo">Laboratório</option>
-          <option value="gestao-pneus">Gestão Pneus</option>
-        </select>
 
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="border px-3 py-2 rounded text-black bg-white"
+          className="px-3 py-2 rounded bg-zinc-800"
         >
-          <option value="usuario">Usuário</option>
-          <option value="admin">Admin</option>
+          {ROLES.map((r) => (
+            <option key={r}>{r}</option>
+          ))}
         </select>
 
         <button
-          onClick={createUser}
-          disabled={loading}
-          className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 transition"
+          onClick={handleCreateUser}
+          className="bg-red-600 px-4 py-2 rounded"
         >
-          {loading ? "Criando..." : "Cadastrar"}
+          Cadastrar
         </button>
-
       </div>
 
+      {/* LISTA */}
       <div className="space-y-3">
+        {users.map((u) => {
+          const managersIds = getManagers(u.id);
 
-        {users.map((u) => (
+          return (
+            <div
+              key={u.id}
+              className="border border-zinc-700 p-3 rounded flex justify-between"
+            >
+              <div>
+                <div>{u.nome}</div>
+                <div className="text-xs text-zinc-400">{u.email}</div>
+              </div>
 
-          <div
-            key={u.email}
-            className="flex flex-wrap md:flex-nowrap justify-between items-center gap-4 border p-4 rounded-lg bg-zinc-900"
-          >
+              <div className="flex flex-col gap-2 items-end">
 
-            <div className="flex-1 min-w-[200px] text-white">
-              {u.email}
+                {/* ROLE */}
+                <select
+                  value={u.role}
+                  onChange={(e) =>
+                    updateRole(u.id, e.target.value)
+                  }
+                  className="bg-zinc-800 px-2 py-1 rounded"
+                >
+                  {ROLES.map((r) => (
+                    <option key={r}>{r}</option>
+                  ))}
+                </select>
+
+                {/* GESTORES */}
+                <div className="flex flex-wrap gap-1 justify-end">
+                  {managersIds.map((mId: string) => {
+                    const manager = users.find(
+                      (x) => x.id === mId
+                    );
+
+                    return (
+                      <div
+                        key={mId}
+                        className="bg-zinc-700 px-2 py-1 rounded flex items-center gap-2"
+                      >
+                        {manager?.nome || "?"}
+
+                        <button
+                          onClick={() =>
+                            removeManager(u.id, mId)
+                          }
+                          className="text-red-400"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* ADICIONAR GESTOR */}
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      addManager(u.id, e.target.value);
+                    }
+                  }}
+                  className="bg-zinc-800 px-2 py-1 rounded"
+                >
+                  <option value="">+ Adicionar gestor</option>
+
+                  {users
+                    .filter(
+                      (x) =>
+                        x.role === "coordenador" ||
+                        x.role === "supervisor" ||
+                        x.role === "gerente"
+                    )
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.nome}
+                      </option>
+                    ))}
+                </select>
+
+              </div>
             </div>
-
-            <select
-              value={u.role}
-              onChange={(e) =>
-                updateUser(u, "role", e.target.value)
-              }
-              className="border px-2 py-1 rounded text-black bg-white text-sm"
-            >
-              <option value="usuario">Usuário</option>
-              <option value="admin">Admin</option>
-            </select>
-
-            <select
-              value={u.division_id}
-              onChange={(e) =>
-                updateUser(u, "division_id", e.target.value)
-              }
-              className="border px-2 py-1 rounded text-black bg-white text-sm"
-            >
-              <option value="central">Central</option>
-              <option value="gestao-pneus">Gestão de Pneus</option>
-              <option value="planejamento">Planejamento</option>
-              <option value="aprovisionamento">Aprovisionamento</option>
-              <option value="cst">CST</option>
-              <option value="coordenacao">Coordenação</option>
-              <option value="laboratorio-oleo">Laboratório de Óleo</option>
-            </select>
-
-            <button
-              onClick={() =>
-                updateUser(u, "ativo", !u.ativo)
-              }
-              className={`px-3 py-1 rounded text-white ${
-                u.ativo ? "bg-green-600" : "bg-red-600"
-              }`}
-            >
-              {u.ativo ? "Ativo" : "Inativo"}
-            </button>
-
-            <button
-              onClick={() => deleteUser(u)}
-              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
-            >
-              Excluir
-            </button>
-
-          </div>
-
-        ))}
-
+          );
+        })}
       </div>
-
     </div>
   );
 }

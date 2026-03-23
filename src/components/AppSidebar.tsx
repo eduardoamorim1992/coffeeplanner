@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { divisions } from "@/data/mockData";
 import { supabase } from "@/lib/supabase";
 import {
   LayoutDashboard,
@@ -10,57 +9,122 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
+  User,
 } from "lucide-react";
+
+// 🔥 HOOK AUTH
+function useAuthUser() {
+  const [user, setUser] = useState<any>(null);
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      setUser(data.user);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return { user };
+}
 
 export default function AppSidebar() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const { user } = useAuthUser();
+
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
-  const [pendingTotals, setPendingTotals] = useState<
-    Record<string, number>
-  >({});
+  const [users, setUsers] = useState<any[]>([]);
+  const [pendingTotals, setPendingTotals] = useState<Record<string, number>>({});
+  const [me, setMe] = useState<any>(null);
 
-  const user = JSON.parse(
-    localStorage.getItem("user_profile") || "null"
-  );
-
-  const handleLogout = () => {
-    localStorage.removeItem("user_profile");
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     navigate("/login");
   };
 
-  // CONTAR TAREFAS
-  const calculateTotals = async () => {
+  // 🔥 CARREGAR USUÁRIOS COM PERMISSÃO
+  async function loadUsers() {
+    if (!user) return;
+
+    console.log("🔥 auth:", user.email);
+
+    const { data: meData, error } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", user.email)
+      .single();
+
+    if (error || !meData) {
+      console.error("Erro ao buscar usuário:", error);
+      return;
+    }
+
+    console.log("🔥 DB user:", meData);
+
+    setMe(meData);
+
+    const role = (meData.role || "").toLowerCase().trim();
+
+    // 🔥 ADMIN / COORDENADOR → VÊ TODOS
+    if (role === "admin" || role === "coordenador") {
+      const { data } = await supabase
+        .from("users")
+        .select("id, nome, role")
+        .order("nome");
+
+      setUsers(data || []);
+    } else {
+      // 🔥 ANALISTA → SÓ ELE
+      setUsers([meData]);
+    }
+  }
+
+  // 🔥 CONTADOR DE PENDENTES
+  async function calculateTotals() {
     const totals: Record<string, number> = {};
 
-    for (const division of divisions) {
-      const { data } = await supabase
+    for (const u of users) {
+      const { count } = await supabase
         .from("atividades")
-        .select("id")
-        .eq("division_id", division.id)
+        .select("*", { count: "exact", head: true })
+        .eq("user_id", u.id)
         .eq("completed", false);
 
-      totals[division.id] = data?.length || 0;
+      totals[u.id] = count || 0;
     }
 
     setPendingTotals(totals);
-  };
+  }
 
   useEffect(() => {
-    calculateTotals();
+    if (user) {
+      loadUsers();
+    }
+  }, [user]);
 
-    const interval = setInterval(() => {
+  useEffect(() => {
+    if (users.length > 0) {
       calculateTotals();
-    }, 2000);
 
-    return () => clearInterval(interval);
-  }, [location.pathname]);
+      const interval = setInterval(() => {
+        calculateTotals();
+      }, 5000);
+
+      return () => clearInterval(interval);
+    }
+  }, [users, location.pathname]);
 
   return (
     <>
-      {/* BOTÃO MOBILE */}
+      {/* MOBILE BUTTON */}
       <button
         onClick={() => setIsMobileOpen(true)}
         className="md:hidden fixed top-4 left-4 z-50 bg-zinc-900 p-2 rounded"
@@ -68,7 +132,6 @@ export default function AppSidebar() {
         <Menu size={20} />
       </button>
 
-      {/* OVERLAY MOBILE */}
       {isMobileOpen && (
         <div
           className="fixed inset-0 bg-black/50 z-40 md:hidden"
@@ -81,11 +144,9 @@ export default function AppSidebar() {
         className={`
           ${collapsed ? "w-20" : "w-64"}
           fixed md:relative
-          z-50 md:z-auto
           h-full
           bg-zinc-950
           border-r border-zinc-800
-          transform
           transition-all duration-300
           flex flex-col justify-between
           ${
@@ -95,14 +156,12 @@ export default function AppSidebar() {
           }
         `}
       >
-        {/* PARTE SUPERIOR */}
         <div>
-
           {/* HEADER */}
           <div className="p-4 flex items-center justify-between border-b border-zinc-800">
             {!collapsed && (
               <span className="text-white font-bold text-lg">
-                Divisões
+                Usuários
               </span>
             )}
 
@@ -110,53 +169,48 @@ export default function AppSidebar() {
               onClick={() => setCollapsed(!collapsed)}
               className="hidden md:block text-zinc-400 hover:text-white"
             >
-              {collapsed ? (
-                <ChevronRight size={18} />
-              ) : (
-                <ChevronLeft size={18} />
-              )}
+              {collapsed ? <ChevronRight /> : <ChevronLeft />}
             </button>
 
             <button
               onClick={() => setIsMobileOpen(false)}
               className="md:hidden"
             >
-              <X size={18} />
+              <X />
             </button>
           </div>
 
           {/* MENU */}
           <div className="p-2 space-y-2">
 
-            {(user?.role === "admin" ||
-              user?.role === "coordenador") && (
-              <button
-                onClick={() => navigate("/dashboard")}
-                className={`flex items-center gap-3 w-full px-3 py-2 rounded text-sm transition
-                ${
-                  location.pathname === "/dashboard"
-                    ? "bg-red-600 text-white"
-                    : "text-zinc-400 hover:bg-zinc-800"
-                }`}
-              >
-                <LayoutDashboard size={18} />
-                {!collapsed && "Dashboard"}
-              </button>
-            )}
+            {/* DASHBOARD (SÓ ADMIN/COORDENADOR) */}
+            {me &&
+              (me.role?.toLowerCase().trim() === "admin" ||
+                me.role?.toLowerCase().trim() === "coordenador") && (
+                <button
+                  onClick={() => navigate("/dashboard")}
+                  className={`flex items-center gap-3 w-full px-3 py-2 rounded text-sm transition
+                  ${
+                    location.pathname === "/dashboard"
+                      ? "bg-red-600 text-white"
+                      : "text-zinc-400 hover:bg-zinc-800"
+                  }`}
+                >
+                  <LayoutDashboard size={18} />
+                  {!collapsed && "Dashboard"}
+                </button>
+              )}
 
-            {divisions.map((division) => {
-              const Icon = division.icon;
-              const pending = pendingTotals[division.id] || 0;
-
+            {/* USERS */}
+            {users.map((u) => {
+              const pending = pendingTotals[u.id] || 0;
               const isActive =
-                location.pathname === `/${division.id}`;
+                location.pathname === `/user/${u.id}`;
 
               return (
                 <button
-                  key={division.id}
-                  onClick={() =>
-                    navigate(`/${division.id}`)
-                  }
+                  key={u.id}
+                  onClick={() => navigate(`/user/${u.id}`)}
                   className={`flex items-center justify-between w-full px-3 py-2 rounded text-sm transition
                   ${
                     isActive
@@ -165,43 +219,36 @@ export default function AppSidebar() {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <Icon size={18} />
-                    {!collapsed && division.name}
+                    <User size={18} />
+
+                    {!collapsed && (
+                      <div className="flex flex-col text-left">
+                        <span>{u.nome}</span>
+                        <span className="text-[10px] text-zinc-500">
+                          {u.role}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   {!collapsed && pending > 0 && (
-                    <span
-                      className={`text-xs px-2 py-0.5 rounded-full
-                      ${
-                        isActive
-                          ? "bg-white text-red-600"
-                          : "bg-zinc-700 text-white"
-                      }`}
-                    >
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-700 text-white">
                       {pending}
                     </span>
                   )}
                 </button>
               );
             })}
-
           </div>
         </div>
 
-        {/* RODAPÉ */}
+        {/* FOOTER */}
         <div className="p-2 border-t border-zinc-800 space-y-2">
 
-          {user?.role === "admin" && (
+          {me?.role?.toLowerCase().trim() === "admin" && (
             <button
-              onClick={() =>
-                navigate("/admin/users")
-              }
-              className={`flex items-center gap-3 w-full px-3 py-2 rounded text-sm transition
-              ${
-                location.pathname === "/admin/users"
-                  ? "bg-red-600 text-white"
-                  : "text-zinc-400 hover:bg-zinc-800"
-              }`}
+              onClick={() => navigate("/admin/users")}
+              className="flex items-center gap-3 w-full px-3 py-2 rounded text-sm text-zinc-400 hover:bg-zinc-800"
             >
               <Settings size={18} />
               {!collapsed && "Configurações"}

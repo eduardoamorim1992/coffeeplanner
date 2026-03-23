@@ -6,72 +6,50 @@ export default function Login() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const navigate = useNavigate();
 
   const handleLogin = async () => {
+
+    setLoading(true);
 
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
 
+    console.log("LOGIN:", data, error);
+
     if (error) {
       alert(error.message);
+      setLoading(false);
       return;
     }
 
     if (!data?.user) {
-      alert("Usuário não encontrado");
+      alert("Erro ao logar");
+      setLoading(false);
       return;
     }
 
-    // 🔎 BUSCAR PERFIL PELO EMAIL
-    const { data: profile, error: profileError } =
-      await supabase
-        .from("users_profile")
-        .select("*")
-        .eq("email", email)
-        .single();
+    // 🔥 BUSCA USUÁRIO
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("email", email)
+      .single();
 
-    if (profileError || !profile) {
-      alert("Perfil não encontrado no sistema");
+    console.log("USER:", userData);
+
+    if (userError || !userData) {
+      alert("Usuário não encontrado na tabela users");
+      setLoading(false);
       return;
     }
 
-    // 🔗 SE UID AINDA NÃO EXISTIR → SALVAR
-    if (!profile.uid) {
-
-      await supabase
-        .from("users_profile")
-        .update({
-          uid: data.user.id
-        })
-        .eq("email", email);
-
-      profile.uid = data.user.id;
-    }
-
-    if (!profile.ativo) {
-      alert("Usuário bloqueado");
-      return;
-    }
-
-    localStorage.setItem(
-      "user_profile",
-      JSON.stringify(profile)
-    );
-
-    if (profile.first_login) {
-      navigate("/alterar-senha");
-      return;
-    }
-
-    if (profile.role === "admin") {
-      navigate("/dashboard");
-    } else {
-      navigate(`/${profile.division_id}`);
-    }
+    // 🔥 AGORA FUNCIONA NORMAL
+    navigate(`/user/${userData.id}`);
   };
 
   return (
@@ -101,9 +79,10 @@ export default function Login() {
 
         <button
           onClick={handleLogin}
-          className="w-full bg-primary text-white py-2 rounded text-sm hover:opacity-90"
+          disabled={loading}
+          className="w-full bg-primary text-white py-2 rounded text-sm"
         >
-          Entrar
+          {loading ? "Entrando..." : "Entrar"}
         </button>
 
       </div>

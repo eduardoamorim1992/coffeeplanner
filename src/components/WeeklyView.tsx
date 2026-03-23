@@ -1,6 +1,6 @@
 import { WeekCard } from "./WeekCard";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
 
 function parseLocalDate(dateString: string) {
   const [year, month, day] = dateString.split("-").map(Number);
@@ -32,7 +32,6 @@ interface Props {
     React.SetStateAction<Record<string, Task[]>>
   >;
   selectedDate: string;
-  divisionId?: string;
 }
 
 function sortTasks(tasks: Task[]) {
@@ -43,68 +42,31 @@ function sortTasks(tasks: Task[]) {
   });
 }
 
-function showNotification(title: string) {
-  if (Notification.permission === "granted") {
-    new Notification("⏰ Atividade em 10 minutos", {
-      body: title,
-    });
-  }
-}
-
 export function WeeklyView({
   calendarData,
   setCalendarData,
   selectedDate,
-  divisionId
 }: Props) {
 
   const notifiedTasks = useRef<Set<string>>(new Set());
 
-  useEffect(() => {
-    if ("Notification" in window) {
-      Notification.requestPermission();
-    }
-  }, []);
+  async function getUserId() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-  useEffect(() => {
+    if (!user) return null;
 
-    const interval = setInterval(() => {
+    const { data, error } = await supabase
+      .from("users")
+      .select("id")
+      .eq("email", user.email)
+      .single();
 
-      const now = new Date();
-      const today = formatDateLocal(now);
+    if (error || !data) return null;
 
-      const tasksToday = calendarData[today] || [];
-
-      tasksToday.forEach((task) => {
-
-        if (!task.time) return;
-
-        const [hour, minute] = task.time.split(":").map(Number);
-
-        const taskDate = new Date();
-        taskDate.setHours(hour);
-        taskDate.setMinutes(minute);
-        taskDate.setSeconds(0);
-
-        const diff = taskDate.getTime() - now.getTime();
-        const tenMinutes = 10 * 60 * 1000;
-
-        if (
-          diff <= tenMinutes &&
-          diff > 0 &&
-          !notifiedTasks.current.has(task.id)
-        ) {
-          showNotification(task.title);
-          notifiedTasks.current.add(task.id);
-        }
-
-      });
-
-    }, 30000);
-
-    return () => clearInterval(interval);
-
-  }, [calendarData]);
+    return data.id;
+  }
 
   const baseDate = parseLocalDate(selectedDate);
 
@@ -116,7 +78,6 @@ export function WeeklyView({
   const week: any[] = [];
 
   for (let i = 0; i < 7; i++) {
-
     const d = new Date(monday);
     d.setDate(monday.getDate() + i);
 
@@ -130,27 +91,57 @@ export function WeeklyView({
       }),
       tasks: sortTasks(calendarData[iso] || []),
     });
-
   }
 
-  async function addTask(dayDate: string, title: string, priority: any, time: string) {
+  function normalizePriority(p: string) {
+    if (!p) return "media";
+    if (p.toLowerCase().includes("alta")) return "alta";
+    if (p.toLowerCase().includes("baixa")) return "baixa";
+    return "media";
+  }
 
-    if (!divisionId) return;
+  async function addTask(
+    dayDate: string,
+    title: string,
+    priority: any,
+    time: string
+  ) {
 
-    const { data } = await supabase
+    if (!title) {
+      alert("Digite uma atividade");
+      return;
+    }
+
+    const userId = await getUserId();
+
+    if (!userId) {
+      alert("Usuário não identificado");
+      return;
+    }
+
+    const safeTime =
+      time && time !== "--:--" ? time : null;
+
+    const safePriority = normalizePriority(priority);
+
+    const { data, error } = await supabase
       .from("atividades")
       .insert({
-        division_id: divisionId,
+        user_id: userId,
         data: dayDate,
-        hora: time,
+        hora: safeTime,
         titulo: title,
-        prioridade: priority,
-        completed: false
+        prioridade: safePriority,
+        completed: false,
       })
       .select()
       .single();
 
-    if (!data) return;
+    if (error) {
+      console.error("ERRO:", error);
+      alert("Erro ao salvar atividade");
+      return;
+    }
 
     setCalendarData((prev) => ({
       ...prev,
@@ -159,13 +150,12 @@ export function WeeklyView({
         {
           id: data.id,
           title: data.titulo,
-          time: data.hora,
+          time: data.hora ? data.hora.slice(0, 5) : null, // 🔥 SEM SEGUNDOS
           completed: data.completed,
-          priority: data.prioridade
-        }
-      ])
+          priority: data.prioridade,
+        },
+      ]),
     }));
-
   }
 
   async function toggleTask(dayDate: string, taskId: string) {
@@ -189,7 +179,6 @@ export function WeeklyView({
         )
       ),
     }));
-
   }
 
   async function deleteTask(dayDate: string, taskId: string) {
@@ -205,12 +194,13 @@ export function WeeklyView({
         (t) => t.id !== taskId
       ),
     }));
-
   }
 
+  // 🔥 REPLICAR TASK (CORRIGIDO)
   async function replicateTask(task: Task, startDate: string) {
 
-    if (!divisionId) return;
+    const userId = await getUserId();
+    if (!userId) return;
 
     const start = parseLocalDate(startDate);
     const weekday = start.getDay();
@@ -229,25 +219,16 @@ export function WeeklyView({
 
         const iso = formatDateLocal(date);
 
-        const exists = (calendarData[iso] || []).some(
-          (t) => t.title === task.title && t.time === task.time
-        );
-
-        if (!exists) {
-
-          inserts.push({
-            division_id: divisionId,
-            data: iso,
-            hora: task.time || null,
-            titulo: task.title,
-            prioridade: task.priority,
-            completed: false
-          });
-
-        }
+        inserts.push({
+          user_id: userId,
+          data: iso,
+          hora: task.time || null,
+          titulo: task.title,
+          prioridade: task.priority,
+          completed: false
+        });
 
       }
-
     }
 
     if (inserts.length === 0) return;
@@ -264,41 +245,35 @@ export function WeeklyView({
       updated[t.data].push({
         id: t.id,
         title: t.titulo,
-        time: t.hora,
+        time: t.hora ? t.hora.slice(0, 5) : null, // 🔥 CORRIGIDO
         completed: t.completed,
         priority: t.prioridade
       });
     });
 
     setCalendarData(updated);
-
   }
 
   return (
     <div className="w-full pb-2">
-
-      {/* 🔥 FULL WIDTH CORRETO */}
       <div className="grid grid-cols-7 gap-2 w-full">
-
         {week.map((day, i) => (
-
           <WeekCard
             key={day.date}
             day={day}
             isToday={false}
             index={i}
-
             onToggleTask={(id) => toggleTask(day.date, id)}
             onDeleteTask={(id) => deleteTask(day.date, id)}
-            onAddTask={(t, p, time) => addTask(day.date, t, p, time)}
-            onReplicateTask={(task) => replicateTask(task, day.date)}
-
+            onAddTask={(t, p, time) =>
+              addTask(day.date, t, p, time)
+            }
+            onReplicateTask={(task) =>
+              replicateTask(task, day.date)
+            }
           />
-
         ))}
-
       </div>
-
     </div>
   );
 }
