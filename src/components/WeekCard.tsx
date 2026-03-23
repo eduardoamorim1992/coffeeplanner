@@ -4,6 +4,7 @@ import {
   Circle,
   Trash2,
   Repeat,
+  Pencil,
 } from "lucide-react";
 
 interface WeekCardProps {
@@ -23,6 +24,7 @@ interface WeekCardProps {
     time: string
   ) => void;
   onReplicateTask: (task: any) => void;
+  onEditTask: (task: any) => void;
 }
 
 export function WeekCard({
@@ -33,6 +35,7 @@ export function WeekCard({
   onDeleteTask,
   onAddTask,
   onReplicateTask,
+  onEditTask,
 }: WeekCardProps) {
 
   const [newTask, setNewTask] = useState("");
@@ -157,7 +160,16 @@ export function WeekCard({
             </div>
 
             {/* AÇÕES */}
-            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition">
+            <div className="flex items-center gap-1 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition">
+
+              <button
+                onClick={() =>
+                  onEditTask(task)
+                }
+                title="Editar atividade"
+              >
+                <Pencil className="w-3 h-3 text-amber-400 hover:text-amber-300" />
+              </button>
 
               <button
                 onClick={() =>
@@ -222,6 +234,7 @@ export function WeekCard({
           </select>
 
           <button
+            type="button"
             onClick={() => {
 
               if (!newTask.trim()) return;
@@ -232,7 +245,7 @@ export function WeekCard({
               setTaskTime("");
 
             }}
-            className="text-[11px] px-2 py-0.5 rounded bg-primary text-white hover:opacity-90 transition"
+            className="min-h-[40px] sm:min-h-0 text-[11px] sm:text-[11px] px-3 py-2 sm:px-2 sm:py-0.5 rounded-lg sm:rounded bg-primary text-white hover:opacity-90 active:scale-[0.98] transition w-full sm:w-auto font-medium"
           >
             Adicionar
           </button>

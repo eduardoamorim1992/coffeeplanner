@@ -1,13 +1,13 @@
 import { useParams } from "react-router-dom";
-import { WeeklyView } from "@/components/WeeklyView";
-import { MonthlyView } from "@/components/MonthlyView";
-import { MonthlyChart } from "@/components/MonthlyChart";
 import { MotivationalBar } from "@/components/MotivationalBar";
 import { MarketTicker } from "@/components/MarketTicker";
 import { AppHeader } from "@/components/AppHeader";
 import AppSidebar from "@/components/AppSidebar";
+import { CalendarView } from "@/components/CalendarView";
+import { DashboardChart } from "@/components/DashboardChart";
+import { OKRPanel } from "@/components/OKRPanel";
 import { supabase } from "@/lib/supabase";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // 🔥 FORMATAR DATA
 function formatDateLocal(date: Date) {
@@ -78,13 +78,14 @@ export default function DivisionPage() {
   const { userId } = useParams();
 
   const [calendarData, setCalendarData] = useState<Record<string, any[]>>({});
-  const [viewMode, setViewMode] = useState<"week" | "month">("month");
   const [selectedDate, setSelectedDate] = useState<string>(
     formatDateLocal(new Date())
   );
+  const [view, setView] = useState<"calendar" | "chart" | "okr">("calendar");
   const [userName, setUserName] = useState("");
   const [loadingReplicate, setLoadingReplicate] = useState(false);
   const [me, setMe] = useState<any>(null);
+  const notifiedTasksRef = useRef<Set<string>>(new Set());
 
   // 🔥 CARREGAR ATIVIDADES COM PERMISSÃO
   async function loadTasks() {
@@ -164,10 +165,55 @@ export default function DivisionPage() {
     loadTasks();
   }, [userId]);
 
+  useEffect(() => {
+    if (!("Notification" in window)) return;
+
+    if (Notification.permission === "default") {
+      Notification.requestPermission();
+    }
+  }, []);
+
+  useEffect(() => {
+    const checkUpcomingTasks = () => {
+      const now = new Date();
+      const today = formatDateLocal(now);
+      const tasksToday = calendarData[today] || [];
+
+      tasksToday.forEach((task) => {
+        if (!task?.id || !task?.time || task.completed) return;
+
+        const [h, m] = String(task.time).split(":").map(Number);
+        if (Number.isNaN(h) || Number.isNaN(m)) return;
+
+        const scheduledAt = new Date(now);
+        scheduledAt.setHours(h, m, 0, 0);
+
+        const diffMs = scheduledAt.getTime() - now.getTime();
+        const taskKey = `${today}-${task.id}-${task.time}`;
+
+        // Notifica apenas no intervalo de 10 minutos antes da atividade.
+        if (diffMs > 0 && diffMs <= 10 * 60 * 1000 && !notifiedTasksRef.current.has(taskKey)) {
+          notifiedTasksRef.current.add(taskKey);
+
+          if ("Notification" in window && Notification.permission === "granted") {
+            new Notification("Atividade agendada", {
+              body: `${task.title} as ${task.time}`,
+            });
+          }
+        }
+      });
+    };
+
+    checkUpcomingTasks();
+    const interval = setInterval(checkUpcomingTasks, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [calendarData]);
+
   // 🔥 REPLICAR (SOMENTE DO USUÁRIO LOGADO)
   async function replicateMonth() {
     const confirm = window.confirm(
-      "Deseja copiar apenas SUAS atividades para o próximo mês?"
+      "Deseja replicar suas atividades para todos os mesmos dias da semana no mês atual?"
     );
     if (!confirm) return;
 
@@ -178,135 +224,194 @@ export default function DivisionPage() {
       return;
     }
 
-    const { data: tasks } = await supabase
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const lastDay = new Date(year, month + 1, 0).getDate();
+
+    const rangeStart = formatDateLocal(new Date(year, month, 1));
+    const rangeEnd = formatDateLocal(new Date(year, month, lastDay));
+
+    // Busca apenas o que está no mês atual para evitar inserir em meses diferentes.
+    const { data: sourceTasks, error: sourceError } = await supabase
       .from("atividades")
       .select("*")
-      .eq("user_id", me.id); // 🔥 GARANTIDO
+      .eq("user_id", me.id)
+      .gte("data", rangeStart)
+      .lte("data", rangeEnd);
 
-    if (!tasks) {
+    if (sourceError) {
+      console.error("Erro ao buscar atividades para replicar:", sourceError);
       setLoadingReplicate(false);
       return;
     }
 
+    const { data: existingTasks, error: existingError } = await supabase
+      .from("atividades")
+      .select("data, hora, titulo")
+      .eq("user_id", me.id)
+      .gte("data", rangeStart)
+      .lte("data", rangeEnd);
+
+    if (existingError) {
+      console.error("Erro ao buscar atividades existentes:", existingError);
+      setLoadingReplicate(false);
+      return;
+    }
+
+    const keyOf = (dataIso: string, hora: any, titulo: any) =>
+      `${dataIso}|${hora ?? ""}|${titulo ?? ""}`;
+
+    // Evita duplicar no dia original e também em datas já existentes.
+    const existingKeys = new Set(
+      (existingTasks || []).map((t: any) =>
+        keyOf(t.data, t.hora, t.titulo)
+      )
+    );
+
     const inserts: any[] = [];
+    const insertedKeys = new Set<string>();
 
-    for (const task of tasks) {
+    for (const task of sourceTasks || []) {
       const original = parseLocalDate(task.data);
-
       const weekday = original.getDay();
-      const occurrence = getWeekdayOccurrence(original);
 
-      const nextMonth = original.getMonth() + 1;
-      const nextYear =
-        nextMonth > 11
-          ? original.getFullYear() + 1
-          : original.getFullYear();
+      for (let d = 1; d <= lastDay; d++) {
+        const date = new Date(year, month, d);
+        if (date.getDay() !== weekday) continue;
 
-      const normalizedMonth = nextMonth > 11 ? 0 : nextMonth;
+        const targetIso = formatDateLocal(date);
+        const k = keyOf(targetIso, task.hora, task.titulo);
 
-      const target = getNthWeekday(
-        nextYear,
-        normalizedMonth,
-        weekday,
-        occurrence
-      );
+        if (existingKeys.has(k) || insertedKeys.has(k)) continue;
 
-      if (!target) continue;
+        inserts.push({
+          user_id: me.id,
+          data: targetIso,
+          hora: task.hora,
+          titulo: task.titulo,
+          prioridade: task.prioridade,
+          completed: false,
+        });
 
-      inserts.push({
-        user_id: me.id, // 🔥 SEMPRE ELE
-        data: formatDateLocal(target),
-        hora: task.hora,
-        titulo: task.titulo,
-        prioridade: task.prioridade,
-        completed: false,
-      });
+        insertedKeys.add(k);
+      }
     }
 
     if (inserts.length > 0) {
-      await supabase.from("atividades").insert(inserts);
+      const { error: insertError } = await supabase
+        .from("atividades")
+        .insert(inserts);
+
+      if (insertError) {
+        console.error("Erro ao inserir atividades replicadas:", insertError);
+      }
     }
 
     setLoadingReplicate(false);
     loadTasks();
   }
 
+  const tabActive = (active: boolean) =>
+    active
+      ? "bg-primary text-primary-foreground border-primary shadow-sm"
+      : "bg-card border-border text-foreground hover:bg-muted/50";
+
+  const tabDesktop = (active: boolean) =>
+    `px-4 py-2.5 rounded-xl border text-sm font-medium transition active:scale-[0.98] ${tabActive(active)}`;
+
+  const tabMobile = (active: boolean) =>
+    `flex-1 min-h-[52px] rounded-xl border text-sm font-medium transition active:scale-[0.98] ${tabActive(active)}`;
+
   return (
-    <div className="flex h-screen bg-background overflow-hidden">
+    <div className="flex h-[100dvh] min-h-0 bg-background overflow-hidden">
       <AppSidebar />
 
-      <div className="flex-1 flex flex-col overflow-hidden">
+      <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <AppHeader divisionName={userName} />
 
-        <main className="flex-1 p-4 md:p-6 space-y-4 overflow-y-auto">
+        <main className="flex-1 min-h-0 p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 overflow-y-auto overscroll-y-contain pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-6">
           <MarketTicker />
           <MotivationalBar />
 
-          {/* CONTROLES */}
-          <div className="flex items-center justify-between">
-            <div className="flex bg-muted/30 border rounded-lg p-1">
-              <button
-                onClick={() => setViewMode("month")}
-                className={`px-4 py-1.5 rounded ${
-                  viewMode === "month"
-                    ? "bg-white text-black"
-                    : ""
-                }`}
-              >
-                📅 Mensal
-              </button>
-
-              <button
-                onClick={() => setViewMode("week")}
-                className={`px-4 py-1.5 rounded ${
-                  viewMode === "week"
-                    ? "bg-white text-black"
-                    : ""
-                }`}
-              >
-                📆 Semana
-              </button>
-            </div>
-
-            {/* 🔥 BOTÃO CORRETO */}
-            {(!userId || userId === me?.id) && (
-              <button
-                onClick={replicateMonth}
-                disabled={loadingReplicate}
-                className="bg-blue-600 px-4 py-1.5 rounded text-white hover:bg-blue-700"
-              >
-                {loadingReplicate
-                  ? "Copiando..."
-                  : "🔁 Replicar mês"}
-              </button>
-            )}
+          {/* Abas no desktop / tablet */}
+          <div className="hidden md:flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => setView("calendar")}
+              className={tabDesktop(view === "calendar")}
+            >
+              📅 Calendário
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("chart")}
+              className={tabDesktop(view === "chart")}
+            >
+              📊 Ver Gráfico
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("okr")}
+              className={tabDesktop(view === "okr")}
+            >
+              🎯 OKR
+            </button>
           </div>
 
-          {/* VIEWS */}
-          {viewMode === "month" ? (
-            <div className="grid grid-cols-12 gap-4">
-              <div className="col-span-8">
-                <MonthlyView
-                  calendarData={calendarData}
-                  onSelectDate={(date) => {
-                    setSelectedDate(date);
-                    setViewMode("week");
-                  }}
-                />
-              </div>
+          <section className="w-full transition-opacity duration-200">
+            {view === "calendar" && (
+              <CalendarView
+                calendarData={calendarData}
+                setCalendarData={setCalendarData}
+                selectedDate={selectedDate}
+                setSelectedDate={setSelectedDate}
+                loadingReplicate={loadingReplicate}
+                onReplicateMonth={replicateMonth}
+                canReplicate={!userId || userId === me?.id}
+              />
+            )}
 
-              <div className="col-span-4">
-                <MonthlyChart calendarData={calendarData} />
-              </div>
-            </div>
-          ) : (
-            <WeeklyView
-              calendarData={calendarData}
-              setCalendarData={setCalendarData}
-              selectedDate={selectedDate}
-            />
-          )}
+            {view === "chart" && (
+              <DashboardChart calendarData={calendarData} />
+            )}
+
+            {view === "okr" && <OKRPanel />}
+          </section>
         </main>
+
+        {/* Barra inferior — mobile (estilo app nativo) */}
+        <nav
+          className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85 pb-safe pt-2 px-2 shadow-[0_-4px_24px_rgba(0,0,0,0.12)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]"
+          aria-label="Navegação principal"
+        >
+          <div className="flex gap-1.5 max-w-lg mx-auto">
+            <button
+              type="button"
+              onClick={() => setView("calendar")}
+              className={`${tabMobile(view === "calendar")} flex flex-col gap-0.5 py-2`}
+            >
+              <span className="text-lg leading-none">📅</span>
+              <span className="text-[11px] font-semibold leading-tight">Calendário</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("chart")}
+              className={`${tabMobile(view === "chart")} flex flex-col gap-0.5 py-2`}
+            >
+              <span className="text-lg leading-none">📊</span>
+              <span className="text-[11px] font-semibold leading-tight">Gráfico</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setView("okr")}
+              className={`${tabMobile(view === "okr")} flex flex-col gap-0.5 py-2`}
+            >
+              <span className="text-lg leading-none">🎯</span>
+              <span className="text-[11px] font-semibold leading-tight">OKR</span>
+            </button>
+          </div>
+        </nav>
       </div>
     </div>
   );

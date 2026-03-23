@@ -19,32 +19,25 @@ export function AppHeader({ divisionName }: AppHeaderProps) {
     : "Usuário";
 
   return (
-    <header className="h-16 border-b border-border flex items-center justify-between px-6 bg-background">
+    <header className="min-h-14 sm:h-16 border-b border-border flex items-center justify-between gap-2 pl-safe pr-safe pt-safe sm:pt-0 px-3 sm:px-6 bg-background/95 backdrop-blur-sm supports-[backdrop-filter]:bg-background/80 shrink-0">
 
-      {/* ESQUERDA */}
-      <h1 className="text-lg font-semibold">
+      {/* ESQUERDA — reserva espaço do menu hambúrguer no mobile */}
+      <h1 className="text-base sm:text-lg font-semibold truncate pl-11 md:pl-0 max-w-[55vw] sm:max-w-[50%] md:max-w-none">
         {divisionName}
       </h1>
 
       {/* DIREITA */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 shrink-0">
 
-        {/* USUÁRIO */}
         <div className="flex items-center gap-2">
-
-          {/* Avatar */}
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
+          <div className="w-9 h-9 sm:w-8 sm:h-8 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold">
             {userName[0]?.toUpperCase()}
           </div>
-
-          {/* Nome */}
-          <span className="text-sm text-muted-foreground">
+          <span className="hidden sm:inline text-sm text-muted-foreground max-w-[100px] md:max-w-none truncate">
             {userName}
           </span>
-
         </div>
 
-        {/* BOTÃO TEMA */}
         <ThemeToggle />
 
       </div>

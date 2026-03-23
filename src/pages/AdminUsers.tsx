@@ -16,10 +16,15 @@ export default function AdminUsers() {
 
   const [users, setUsers] = useState<any[]>([]);
   const [relations, setRelations] = useState<any[]>([]);
+  const [nome, setNome] = useState("");
   const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [role, setRole] = useState("assistente");
+  const [loading, setLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
-  // 🔥 CARREGAR DADOS
+  // 🔥 LOAD
   async function loadData() {
     const { data: usersData } = await supabase
       .from("users")
@@ -38,33 +43,136 @@ export default function AdminUsers() {
     loadData();
   }, []);
 
+  function validateForm() {
+    if (!nome.trim()) {
+      return "Informe o nome";
+    }
+
+    if (!email.trim()) {
+      return "Informe o email";
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(email.trim())) {
+      return "Informe um email valido";
+    }
+
+    if (!password.trim()) {
+      return "Informe a senha";
+    }
+
+    if (password.length < 6) {
+      return "A senha deve ter pelo menos 6 caracteres";
+    }
+
+    return "";
+  }
+
   // 🔥 CRIAR USUÁRIO
   async function handleCreateUser() {
-    if (!email) return alert("Informe email");
+    setErrorMessage("");
+    setSuccessMessage("");
 
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password: "123456",
-    });
-
-    if (error) {
-      alert(error.message);
+    const validationError = validateForm();
+    if (validationError) {
+      setErrorMessage(validationError);
       return;
     }
 
-    await supabase.from("users").insert({
-      auth_id: data.user?.id,
-      email,
-      nome: email.split("@")[0],
-      role,
-      ativo: true,
-    });
+    setLoading(true);
 
-    setEmail("");
-    loadData();
+    try {
+      const cleanNome = nome.trim();
+      const cleanEmail = email.trim().toLowerCase();
+      const { data: currentSessionData } = await supabase.auth.getSession();
+      const currentSession = currentSessionData.session;
+
+      const { data: duplicatedUser, error: duplicatedUserError } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", cleanEmail)
+        .maybeSingle();
+
+      if (duplicatedUserError) {
+        setErrorMessage("Erro ao validar duplicidade de email");
+        return;
+      }
+
+      if (duplicatedUser) {
+        setErrorMessage("Ja existe um usuario com este email");
+        return;
+      }
+
+      const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+        email: cleanEmail,
+        password,
+        options: {
+          data: {
+            nome: cleanNome,
+            role,
+          },
+        },
+      });
+
+      if (signUpError || !signUpData.user) {
+        if (signUpError?.message?.toLowerCase().includes("already registered")) {
+          setErrorMessage("Ja existe cadastro no Auth para este email");
+          return;
+        }
+
+        setErrorMessage(signUpError?.message || "Erro ao criar usuario no auth");
+        return;
+      }
+
+      // Se o signUp trocar a sessão para o novo usuário, restauramos a sessão atual.
+      if (
+        currentSession?.access_token &&
+        currentSession?.refresh_token &&
+        signUpData.session?.user?.id &&
+        signUpData.session.user.id !== currentSession.user.id
+      ) {
+        const { error: restoreSessionError } = await supabase.auth.setSession({
+          access_token: currentSession.access_token,
+          refresh_token: currentSession.refresh_token,
+        });
+
+        if (restoreSessionError) {
+          setErrorMessage("Usuario criado no Auth, mas falhou ao restaurar sessao do admin");
+          return;
+        }
+      }
+
+      const { error: profileError } = await supabase.from("users").upsert(
+        {
+          id: signUpData.user.id,
+          nome: cleanNome,
+          email: cleanEmail,
+          role,
+        },
+        { onConflict: "id" }
+      );
+
+      if (profileError) {
+        setErrorMessage(profileError.message || "Erro ao salvar dados do usuario");
+        return;
+      }
+
+      setSuccessMessage("Usuario criado com sucesso");
+
+      setNome("");
+      setEmail("");
+      setPassword("");
+      setRole("assistente");
+      loadData();
+    } catch (err) {
+      console.error(err);
+      setErrorMessage("Erro na requisicao");
+    } finally {
+      setLoading(false);
+    }
   }
 
-  // 🔥 ATUALIZAR ROLE
+  // 🔥 ALTERAR ROLE
   async function updateRole(id: string, newRole: string) {
     await supabase
       .from("users")
@@ -76,6 +184,8 @@ export default function AdminUsers() {
 
   // 🔥 ADICIONAR GESTOR
   async function addManager(userId: string, managerId: string) {
+    if (!managerId) return;
+
     await supabase.from("user_managers").insert({
       user_id: userId,
       manager_id: managerId,
@@ -95,7 +205,7 @@ export default function AdminUsers() {
     loadData();
   }
 
-  // 🔥 PEGAR GESTORES DO USUÁRIO
+  // 🔥 PEGAR GESTORES
   function getManagers(userId: string) {
     return relations
       .filter((r) => r.user_id === userId)
@@ -108,15 +218,30 @@ export default function AdminUsers() {
         ← Voltar
       </button>
 
-      <h1 className="text-xl mb-4">⚙ Gerenciar Usuários</h1>
+      <h1 className="text-xl mb-6">⚙ Gerenciar Usuários</h1>
 
       {/* FORM */}
       <div className="flex gap-2 mb-6">
         <input
+          placeholder="Nome"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          className="px-3 py-2 rounded bg-zinc-800 w-56"
+        />
+
+        <input
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="px-3 py-2 rounded bg-zinc-800"
+          className="px-3 py-2 rounded bg-zinc-800 w-64"
+        />
+
+        <input
+          type="password"
+          placeholder="Senha"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="px-3 py-2 rounded bg-zinc-800 w-52"
         />
 
         <select
@@ -131,11 +256,24 @@ export default function AdminUsers() {
 
         <button
           onClick={handleCreateUser}
-          className="bg-red-600 px-4 py-2 rounded"
+          disabled={loading}
+          className="bg-red-600 px-4 py-2 rounded disabled:opacity-50"
         >
-          Cadastrar
+          {loading ? "Criando..." : "Cadastrar"}
         </button>
       </div>
+
+      {errorMessage ? (
+        <div className="mb-4 rounded border border-red-700 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+          {errorMessage}
+        </div>
+      ) : null}
+
+      {successMessage ? (
+        <div className="mb-4 rounded border border-emerald-700 bg-emerald-950/40 px-3 py-2 text-sm text-emerald-300">
+          {successMessage}
+        </div>
+      ) : null}
 
       {/* LISTA */}
       <div className="space-y-3">
@@ -145,14 +283,18 @@ export default function AdminUsers() {
           return (
             <div
               key={u.id}
-              className="border border-zinc-700 p-3 rounded flex justify-between"
+              className="border border-zinc-700 p-4 rounded flex justify-between"
             >
+              {/* INFO */}
               <div>
-                <div>{u.nome}</div>
-                <div className="text-xs text-zinc-400">{u.email}</div>
+                <div className="font-medium">{u.nome}</div>
+                <div className="text-xs text-zinc-400">
+                  {u.email}
+                </div>
               </div>
 
-              <div className="flex flex-col gap-2 items-end">
+              {/* AÇÕES */}
+              <div className="flex flex-col items-end gap-2">
 
                 {/* ROLE */}
                 <select

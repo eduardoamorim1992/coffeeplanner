@@ -7,10 +7,13 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
+  const [message, setMessage] = useState("");
 
   const navigate = useNavigate();
 
   const handleLogin = async () => {
+    setMessage("");
 
     setLoading(true);
 
@@ -52,6 +55,30 @@ export default function Login() {
     navigate(`/user/${userData.id}`);
   };
 
+  const handleForgotPassword = async () => {
+    setMessage("");
+
+    if (!email.trim()) {
+      setMessage("Informe seu email para recuperar a senha.");
+      return;
+    }
+
+    setResetLoading(true);
+
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+      redirectTo: `${window.location.origin}/definir-senha`,
+    });
+
+    if (error) {
+      setMessage(error.message);
+      setResetLoading(false);
+      return;
+    }
+
+    setMessage("Enviamos o link de recuperacao para seu email.");
+    setResetLoading(false);
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
 
@@ -84,6 +111,21 @@ export default function Login() {
         >
           {loading ? "Entrando..." : "Entrar"}
         </button>
+
+        <button
+          type="button"
+          onClick={handleForgotPassword}
+          disabled={resetLoading}
+          className="w-full text-sm text-zinc-300 hover:text-white underline underline-offset-2 disabled:opacity-60"
+        >
+          {resetLoading ? "Enviando..." : "Esqueci minha senha"}
+        </button>
+
+        {message ? (
+          <div className="text-xs text-center text-zinc-300">
+            {message}
+          </div>
+        ) : null}
 
       </div>
     </div>

@@ -158,6 +158,58 @@ export function WeeklyView({
     }));
   }
 
+  async function editTask(dayDate: string, task: Task) {
+    const nextTitleRaw = window.prompt(
+      "Editar descrição da atividade:",
+      task.title
+    );
+    if (nextTitleRaw === null) return;
+
+    const nextTitle = nextTitleRaw.trim();
+    if (!nextTitle) {
+      alert("A descrição não pode ficar vazia.");
+      return;
+    }
+
+    const nextTimeRaw = window.prompt(
+      "Editar horário (HH:MM). Deixe vazio para remover:",
+      task.time || ""
+    );
+    if (nextTimeRaw === null) return;
+
+    const nextTime = nextTimeRaw.trim();
+    const safeTime = nextTime ? nextTime : null;
+
+    const { error } = await supabase
+      .from("atividades")
+      .update({
+        titulo: nextTitle,
+        hora: safeTime,
+      })
+      .eq("id", task.id);
+
+    if (error) {
+      console.error("Erro ao editar atividade:", error);
+      alert("Não foi possível editar a atividade.");
+      return;
+    }
+
+    setCalendarData((prev) => ({
+      ...prev,
+      [dayDate]: sortTasks(
+        (prev[dayDate] || []).map((t) =>
+          t.id === task.id
+            ? {
+                ...t,
+                title: nextTitle,
+                time: safeTime,
+              }
+            : t
+        )
+      ),
+    }));
+  }
+
   async function toggleTask(dayDate: string, taskId: string) {
 
     const tasks = calendarData[dayDate] || [];
@@ -207,7 +259,27 @@ export function WeeklyView({
     const month = start.getMonth();
     const year = start.getFullYear();
 
+    const monthStart = formatDateLocal(new Date(year, month, 1));
+    const monthEnd = formatDateLocal(new Date(year, month + 1, 0));
+
+    const { data: existingRows } = await supabase
+      .from("atividades")
+      .select("data, hora, titulo, prioridade")
+      .eq("user_id", userId)
+      .gte("data", monthStart)
+      .lte("data", monthEnd);
+
+    const makeKey = (iso: string, hora: string | null, titulo: string, prioridade: string) =>
+      `${iso}|${hora || ""}|${titulo}|${prioridade}`;
+
+    const existingKeys = new Set(
+      (existingRows || []).map((row: any) =>
+        makeKey(row.data, row.hora, row.titulo, row.prioridade)
+      )
+    );
+
     const inserts: any[] = [];
+    const insertKeys = new Set<string>();
 
     for (let day = 1; day <= 31; day++) {
 
@@ -218,15 +290,25 @@ export function WeeklyView({
       if (date.getDay() === weekday) {
 
         const iso = formatDateLocal(date);
+        const hora = task.time || null;
+        const k = makeKey(iso, hora, task.title, task.priority);
+
+        // Nunca replica no mesmo dia de origem.
+        if (iso === startDate) continue;
+
+        // Evita duplicar em dias que já tenham a mesma atividade.
+        if (existingKeys.has(k) || insertKeys.has(k)) continue;
 
         inserts.push({
           user_id: userId,
           data: iso,
-          hora: task.time || null,
+          hora,
           titulo: task.title,
           prioridade: task.priority,
           completed: false
         });
+
+        insertKeys.add(k);
 
       }
     }
@@ -255,8 +337,8 @@ export function WeeklyView({
   }
 
   return (
-    <div className="w-full pb-2">
-      <div className="grid grid-cols-7 gap-2 w-full">
+    <div className="w-full pb-2 pb-safe md:pb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 w-full">
         {week.map((day, i) => (
           <WeekCard
             key={day.date}
@@ -270,6 +352,9 @@ export function WeeklyView({
             }
             onReplicateTask={(task) =>
               replicateTask(task, day.date)
+            }
+            onEditTask={(task) =>
+              editTask(day.date, task)
             }
           />
         ))}

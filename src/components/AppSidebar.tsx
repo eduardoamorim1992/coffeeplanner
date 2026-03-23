@@ -10,6 +10,7 @@ import {
   ChevronRight,
   Settings,
   User,
+  KeyRound,
 } from "lucide-react";
 
 // 🔥 HOOK AUTH
@@ -140,10 +141,16 @@ export default function AppSidebar() {
   return (
     <>
       <button
+        type="button"
+        aria-label="Abrir menu"
         onClick={() => setIsMobileOpen(true)}
-        className="md:hidden fixed top-4 left-4 z-50 bg-zinc-900 p-2 rounded"
+        className="md:hidden fixed z-50 touch-target rounded-xl bg-zinc-900/95 border border-zinc-700 shadow-lg backdrop-blur-sm"
+        style={{
+          top: "max(0.75rem, env(safe-area-inset-top, 0px))",
+          left: "max(0.75rem, env(safe-area-inset-left, 0px))",
+        }}
       >
-        <Menu size={20} />
+        <Menu size={22} className="text-white" />
       </button>
 
       {isMobileOpen && (
@@ -155,13 +162,15 @@ export default function AppSidebar() {
 
       <aside
         className={`
-          ${collapsed ? "w-20" : "w-64"}
+          ${collapsed ? "w-20" : "w-[min(100vw-3rem,18rem)] sm:w-64"}
           fixed md:relative
-          h-full
+          h-full max-h-[100dvh]
           bg-zinc-950
           border-r border-zinc-800
-          transition-all duration-300
+          transition-all duration-300 ease-out
           flex flex-col justify-between
+          z-50 md:z-auto
+          shadow-2xl md:shadow-none
           ${
             isMobileOpen
               ? "translate-x-0"
@@ -189,12 +198,19 @@ export default function AppSidebar() {
             </button>
           </div>
 
-          <div className="p-2 space-y-2">
+          <div className="p-2 space-y-2 flex-1 overflow-y-auto min-h-0 overscroll-contain pb-safe md:pb-2">
             {/* DASHBOARD */}
-            {me?.role === "admin" && (
+            {(me?.role === "admin" ||
+              ["coordenador", "supervisor", "gerente"].includes(
+                String(me?.role || "").toLowerCase().trim()
+              )) && (
               <button
-                onClick={() => navigate("/dashboard")}
-                className={`flex items-center gap-3 w-full px-3 py-2 rounded text-sm ${
+                type="button"
+                onClick={() => {
+                  navigate("/dashboard");
+                  setIsMobileOpen(false);
+                }}
+                className={`flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm active:bg-zinc-800/80 ${
                   location.pathname === "/dashboard"
                     ? "bg-red-600 text-white"
                     : "text-zinc-400 hover:bg-zinc-800"
@@ -212,9 +228,13 @@ export default function AppSidebar() {
 
               return (
                 <button
+                  type="button"
                   key={u.id}
-                  onClick={() => navigate(`/user/${u.id}`)}
-                  className={`flex items-center justify-between w-full px-3 py-2 rounded text-sm ${
+                  onClick={() => {
+                    navigate(`/user/${u.id}`);
+                    setIsMobileOpen(false);
+                  }}
+                  className={`flex items-center justify-between w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm active:bg-zinc-800/80 ${
                     isActive
                       ? "bg-red-600 text-white"
                       : "text-zinc-400 hover:bg-zinc-800"
@@ -245,11 +265,15 @@ export default function AppSidebar() {
         </div>
 
         {/* 🔥 FOOTER COM CONFIGURAÇÕES */}
-        <div className="p-2 border-t border-zinc-800 space-y-2">
+        <div className="p-2 border-t border-zinc-800 space-y-2 pb-safe md:pb-2 shrink-0">
           {me?.role === "admin" && (
             <button
-              onClick={() => navigate("/admin/users")}
-              className="flex items-center gap-3 w-full px-3 py-2 rounded text-sm text-zinc-400 hover:bg-zinc-800"
+              type="button"
+              onClick={() => {
+                navigate("/admin/users");
+                setIsMobileOpen(false);
+              }}
+              className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 active:bg-zinc-800/80"
             >
               <Settings size={18} />
               {!collapsed && "Gerenciar Usuários"}
@@ -257,8 +281,24 @@ export default function AppSidebar() {
           )}
 
           <button
-            onClick={handleLogout}
-            className="flex items-center gap-3 w-full px-3 py-2 rounded text-sm text-zinc-400 hover:bg-zinc-800"
+            type="button"
+            onClick={() => {
+              navigate("/alterar-senha");
+              setIsMobileOpen(false);
+            }}
+            className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 active:bg-zinc-800/80"
+          >
+            <KeyRound size={18} />
+            {!collapsed && "Alterar senha"}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setIsMobileOpen(false);
+              handleLogout();
+            }}
+            className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 active:bg-zinc-800/80"
           >
             <LogOut size={18} />
             {!collapsed && "Sair"}

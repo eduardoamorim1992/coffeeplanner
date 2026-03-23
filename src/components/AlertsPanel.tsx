@@ -6,7 +6,7 @@ export function AlertsPanel({ globalCalendarData }: Props) {
   const alerts: string[] = [];
 
   Object.entries(globalCalendarData).forEach(
-    ([divisionId, calendar]) => {
+    ([, calendar]) => {
       Object.entries(calendar).forEach(
         ([date, tasks]) => {
           tasks.forEach((task: any) => {
@@ -14,8 +14,9 @@ export function AlertsPanel({ globalCalendarData }: Props) {
               task.priority === "alta" &&
               !task.completed
             ) {
+              const who = task.userName || "Colaborador";
               alerts.push(
-                `Alta prioridade pendente em ${divisionId} (${date})`
+                `${who}: alta prioridade pendente (${date})`
               );
             }
           });

@@ -10,6 +10,7 @@ import Dashboard from "@/components/Dashboard";
 import Login from "@/pages/Login";
 import AdminUsers from "@/pages/AdminUsers";
 import AlterarSenha from "@/pages/AlterarSenha";
+import DefinirSenha from "@/pages/DefinirSenha";
 import { useAuthUser } from "@/hooks/useAuthUser";
 
 // 🔥 PROTECTED ROUTE BASE (ÚNICO CONTROLE)
@@ -38,6 +39,7 @@ export default function App() {
 
         {/* LOGIN */}
         <Route path="/login" element={<Login />} />
+        <Route path="/definir-senha" element={<DefinirSenha />} />
 
         {/* DASHBOARD */}
         <Route

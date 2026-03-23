@@ -8,26 +8,27 @@ export function RankingBoard({ globalCalendarData }: Props) {
 
   const users: Record<
     string,
-    { total: number; completed: number }
+    { total: number; completed: number; displayName: string }
   > = {};
 
-  // 🔥 percorre TODAS as divisões
+  // Agrupa por user_id (evita fundir homônimos) e exibe nome amigável
   Object.values(globalCalendarData).forEach((division: any) => {
 
     Object.values(division).forEach((tasks: any) => {
 
       tasks.forEach((task: any) => {
 
-        const user = task.userName || "Sem usuário";
+        const uid = task.user_id ? String(task.user_id) : "sem-id";
+        const displayName = task.userName || "Sem usuário";
 
-        if (!users[user]) {
-          users[user] = { total: 0, completed: 0 };
+        if (!users[uid]) {
+          users[uid] = { total: 0, completed: 0, displayName };
         }
 
-        users[user].total++;
+        users[uid].total++;
 
         if (task.completed) {
-          users[user].completed++;
+          users[uid].completed++;
         }
 
       });
@@ -36,9 +37,9 @@ export function RankingBoard({ globalCalendarData }: Props) {
 
   });
 
-  // 🔥 monta ranking
-  const ranking = Object.entries(users).map(([name, val]) => ({
-    name,
+  const ranking = Object.entries(users).map(([uid, val]) => ({
+    id: uid,
+    name: val.displayName,
     total: val.total,
     completed: val.completed,
     rate:
@@ -69,11 +70,11 @@ export function RankingBoard({ globalCalendarData }: Props) {
 
           return (
             <div
-              key={user.name}
-              className="flex justify-between items-center text-sm"
+              key={user.id}
+              className="flex justify-between items-center gap-2 text-sm"
             >
 
-              <span className="text-muted-foreground">
+              <span className="text-muted-foreground truncate min-w-0">
                 {medal} {user.name}
               </span>
 

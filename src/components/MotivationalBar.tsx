@@ -43,18 +43,18 @@ export function MotivationalBar() {
   const fraseAtual = frases[index];
 
   return (
-    <div className="relative overflow-hidden rounded-lg border border-border bg-gradient-to-r from-zinc-900 to-zinc-800 px-4 py-2">
+    <div className="relative overflow-hidden rounded-xl border border-border bg-gradient-to-r from-zinc-900 to-zinc-800 px-3 py-3 sm:px-4 sm:py-2.5">
 
       <div
         className={`transition-opacity duration-300 ${
           fade ? "opacity-100" : "opacity-0"
         }`}
       >
-        <p className="text-sm text-center text-white font-medium leading-snug">
+        <p className="text-xs sm:text-sm text-center text-white font-medium leading-relaxed">
           "{fraseAtual.text}"
         </p>
 
-        <p className="text-[11px] text-zinc-400 text-center italic mt-1">
+        <p className="text-[10px] sm:text-[11px] text-zinc-400 text-center italic mt-1.5 sm:mt-1">
           — {fraseAtual.author}
         </p>
       </div>
