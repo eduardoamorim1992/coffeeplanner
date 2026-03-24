@@ -13,6 +13,31 @@ import {
   KeyRound,
 } from "lucide-react";
 
+// Hierarquia de cargos — cima = maior nível, baixo = menor nível
+const ROLE_HIERARCHY = [
+  "admin",
+  "gerente",
+  "supervisor",
+  "coordenador",
+  "analista",
+  "assistente",
+];
+
+function sortUsersByHierarchy<T extends { nome?: string; role?: string }>(
+  list: T[]
+): T[] {
+  return [...list].sort((a, b) => {
+    const roleA = String(a.role || "").toLowerCase().trim();
+    const roleB = String(b.role || "").toLowerCase().trim();
+    const idxA = ROLE_HIERARCHY.indexOf(roleA);
+    const idxB = ROLE_HIERARCHY.indexOf(roleB);
+    const posA = idxA === -1 ? 999 : idxA;
+    const posB = idxB === -1 ? 999 : idxB;
+    if (posA !== posB) return posA - posB;
+    return (a.nome || "").localeCompare(b.nome || "");
+  });
+}
+
 // 🔥 HOOK AUTH
 function useAuthUser() {
   const [user, setUser] = useState<any>(null);
@@ -221,8 +246,8 @@ export default function AppSidebar() {
               </button>
             )}
 
-            {/* USUÁRIOS */}
-            {users.map((u) => {
+            {/* USUÁRIOS — ordenados por hierarquia */}
+            {sortUsersByHierarchy(users).map((u) => {
               const pending = pendingTotals[u.id] || 0;
               const isActive = location.pathname === `/user/${u.id}`;
 

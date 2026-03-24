@@ -21,6 +21,8 @@ interface CalendarViewProps {
   canReplicate: boolean;
 }
 
+const today = new Date();
+
 export function CalendarView({
   calendarData,
   setCalendarData,
@@ -31,16 +33,26 @@ export function CalendarView({
   canReplicate,
 }: CalendarViewProps) {
   const [calendarMode, setCalendarMode] = useState<"month" | "week">("month");
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+
+  const changeMonth = (offset: number) => {
+    const newDate = new Date(viewYear, viewMonth + offset, 1);
+    setViewMonth(newDate.getMonth());
+    setViewYear(newDate.getFullYear());
+  };
 
   return (
     <div className="space-y-3 sm:space-y-4 transition-all duration-300">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex w-full sm:w-auto bg-muted/30 border rounded-xl p-1 gap-1">
+        <div className="flex w-full sm:w-auto bg-zinc-950/60 backdrop-blur-sm border border-zinc-800/80 rounded-2xl p-1.5 gap-1.5 shadow-[0_8px_24px_-18px_rgba(0,0,0,0.8)]">
           <button
             type="button"
             onClick={() => setCalendarMode("month")}
-            className={`flex-1 sm:flex-none min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition ${
-              calendarMode === "month" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+            className={`flex-1 sm:flex-none min-h-[44px] px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              calendarMode === "month"
+                ? "bg-gradient-to-r from-primary to-red-500 text-white shadow-[0_10px_24px_-12px_rgba(239,68,68,0.7)] ring-1 ring-red-300/30"
+                : "text-zinc-300 hover:text-white hover:bg-zinc-800/70"
             }`}
           >
             📅 Mensal
@@ -48,8 +60,10 @@ export function CalendarView({
           <button
             type="button"
             onClick={() => setCalendarMode("week")}
-            className={`flex-1 sm:flex-none min-h-[44px] px-4 py-2 rounded-lg text-sm font-medium transition ${
-              calendarMode === "week" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground"
+            className={`flex-1 sm:flex-none min-h-[44px] px-5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+              calendarMode === "week"
+                ? "bg-gradient-to-r from-primary to-red-500 text-white shadow-[0_10px_24px_-12px_rgba(239,68,68,0.7)] ring-1 ring-red-300/30"
+                : "text-zinc-300 hover:text-white hover:bg-zinc-800/70"
             }`}
           >
             📆 Semana
@@ -72,6 +86,9 @@ export function CalendarView({
         <div className="w-full">
           <MonthlyView
             calendarData={calendarData}
+            currentMonth={viewMonth}
+            currentYear={viewYear}
+            onMonthChange={changeMonth}
             onSelectDate={(date) => {
               setSelectedDate(date);
               setCalendarMode("week");

@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useCallback, useRef } from "react";
+import { createPortal } from "react-dom";
 
 function formatDateLocal(date: Date) {
   return `${date.getFullYear()}-${String(
@@ -11,18 +12,41 @@ interface Task {
   title: string;
   completed: boolean;
   priority: "alta" | "media" | "baixa";
+  time?: string | null;
 }
 
 interface Props {
   calendarData: Record<string, Task[]>;
+  currentMonth: number;
+  currentYear: number;
+  onMonthChange: (offset: number) => void;
   onSelectDate: (date: string) => void;
 }
 
-export function MonthlyView({ calendarData, onSelectDate }: Props) {
-  const today = new Date();
+export function MonthlyView({
+  calendarData,
+  currentMonth,
+  currentYear,
+  onMonthChange,
+  onSelectDate,
+}: Props) {
+  const [tooltip, setTooltip] = useState<{ date: string; rect: DOMRect } | null>(null);
+  const hideRef = useRef<number | null>(null);
 
-  const [currentMonth, setCurrentMonth] = useState(today.getMonth());
-  const [currentYear, setCurrentYear] = useState(today.getFullYear());
+  const showTooltip = useCallback((date: string, rect: DOMRect) => {
+    if (hideRef.current) {
+      clearTimeout(hideRef.current);
+      hideRef.current = null;
+    }
+    setTooltip({ date, rect });
+  }, []);
+
+  const hideTooltip = useCallback(() => {
+    hideRef.current = window.setTimeout(() => {
+      setTooltip(null);
+      hideRef.current = null;
+    }, 100);
+  }, []);
 
   const firstDay = new Date(currentYear, currentMonth, 1);
   const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -42,9 +66,12 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
   }
 
   function changeMonth(offset: number) {
-    const newDate = new Date(currentYear, currentMonth + offset, 1);
-    setCurrentMonth(newDate.getMonth());
-    setCurrentYear(newDate.getFullYear());
+    setTooltip(null);
+    if (hideRef.current) {
+      clearTimeout(hideRef.current);
+      hideRef.current = null;
+    }
+    onMonthChange(offset);
   }
 
   function getStatus(tasks: Task[]) {
@@ -64,13 +91,16 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
 
   return (
     <div className="space-y-3 sm:space-y-6 w-full h-full flex flex-col -mx-1 sm:mx-0">
-
       {/* HEADER */}
       <div className="flex justify-between items-center gap-2 px-1">
         <button
           type="button"
           aria-label="Mês anterior"
-          onClick={() => changeMonth(-1)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            changeMonth(-1);
+          }}
           className="min-h-[44px] min-w-[44px] rounded-xl bg-muted hover:bg-primary/20 transition flex items-center justify-center text-lg"
         >
           ◀
@@ -86,7 +116,11 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
         <button
           type="button"
           aria-label="Próximo mês"
-          onClick={() => changeMonth(1)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            changeMonth(1);
+          }}
           className="min-h-[44px] min-w-[44px] rounded-xl bg-muted hover:bg-primary/20 transition flex items-center justify-center text-lg"
         >
           ▶
@@ -104,7 +138,7 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
       </div>
 
       {/* GRID */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-2 flex-1 px-0.5">
+      <div className="grid grid-cols-7 gap-1 sm:gap-2 flex-1 px-0.5 overflow-visible">
 
         {days.map((date, index) => {
 
@@ -127,6 +161,8 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
           ).length;
 
           const completed = tasks.filter((t) => t.completed).length;
+          const pendingTasks = tasks.filter((t) => !t.completed);
+          const completedTasks = tasks.filter((t) => t.completed);
 
           const status = getStatus(tasks);
 
@@ -135,8 +171,10 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
               type="button"
               key={index}
               onClick={() => onSelectDate(date)}
+              onMouseEnter={(e) => tasks.length > 0 && showTooltip(date, e.currentTarget.getBoundingClientRect())}
+              onMouseLeave={hideTooltip}
               className={`
-                min-h-[4.5rem] sm:min-h-[6rem] border rounded-md sm:rounded-lg p-1 sm:p-2 text-left cursor-pointer transition-all active:scale-[0.98]
+                relative group min-h-[4.5rem] sm:min-h-[6rem] border rounded-md sm:rounded-lg p-1 sm:p-2 text-left cursor-pointer transition-all active:scale-[0.98]
                 touch-manipulation
 
                 ${status === "done" && "bg-green-500/20 border-green-500"}
@@ -198,9 +236,104 @@ export function MonthlyView({ calendarData, onSelectDate }: Props) {
                 )}
 
               </div>
+
             </button>
           );
         })}
+      </div>
+
+      {/* Tooltip via Portal — fora do grid, fundo opaco */}
+      {tooltip &&
+        createPortal(
+          <DayTooltip
+            date={tooltip.date}
+            rect={tooltip.rect}
+            tasks={calendarData[tooltip.date] || []}
+            onMouseEnter={() => {
+              if (hideRef.current) {
+                clearTimeout(hideRef.current);
+                hideRef.current = null;
+              }
+            }}
+            onMouseLeave={hideTooltip}
+          />,
+          document.body
+        )}
+    </div>
+  );
+}
+
+function DayTooltip({
+  date,
+  rect,
+  tasks,
+  onMouseEnter,
+  onMouseLeave,
+}: {
+  date: string;
+  rect: DOMRect;
+  tasks: Task[];
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+}) {
+  const pendingTasks = tasks.filter((t) => !t.completed);
+  const completedTasks = tasks.filter((t) => t.completed);
+  const completed = completedTasks.length;
+  const cardWidth = 320;
+  const gap = 8;
+
+  const win = typeof window !== "undefined" ? window : null;
+  const spaceBelow = win ? win.innerHeight - rect.bottom - gap : 300;
+  const spaceAbove = win ? rect.top - gap : 300;
+  const showAbove = spaceBelow < 220 && spaceAbove >= spaceBelow;
+
+  const left = Math.max(
+    12,
+    Math.min(rect.left, typeof window !== "undefined" ? window.innerWidth - cardWidth - 12 : rect.left)
+  );
+
+  const positionStyle = showAbove
+    ? { bottom: (win?.innerHeight ?? 800) - rect.top + gap, left }
+    : { top: rect.bottom + gap, left };
+
+  return (
+    <div
+      className="fixed hidden md:flex flex-col min-w-[280px] max-w-[350px] w-[320px] max-h-[250px] rounded-xl animate-fade-in"
+      style={{
+        ...positionStyle,
+        zIndex: 99999,
+        backgroundColor: "#0a0a0b",
+        border: "1px solid rgba(113, 113, 122, 0.4)",
+        boxShadow:
+          "0 0 0 1px rgba(255,255,255,0.04), 0 4px 6px -2px rgba(0,0,0,0.4), 0 20px 40px -15px rgba(0,0,0,0.8), 0 0 80px -20px rgba(0,0,0,0.6)",
+      }}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+    >
+      <div className="shrink-0 px-4 pt-4 pb-2 border-b border-zinc-700/80">
+        <span className="text-[11px] text-zinc-400 leading-relaxed">
+          {completed}/{tasks.length} concluídas
+        </span>
+      </div>
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-3 space-y-2">
+        {pendingTasks.map((t) => (
+          <div
+            key={t.id}
+            className="text-[11px] text-zinc-200 leading-relaxed break-words"
+          >
+            • {t.time ? <span className="text-zinc-500 font-mono mr-1.5">{t.time}</span> : ""}
+            {t.title}
+          </div>
+        ))}
+        {completedTasks.map((t) => (
+          <div
+            key={t.id}
+            className="text-[11px] text-zinc-500 line-through leading-relaxed break-words"
+          >
+            • {t.time ? <span className="text-zinc-600 font-mono mr-1.5">{t.time}</span> : ""}
+            {t.title}
+          </div>
+        ))}
       </div>
     </div>
   );

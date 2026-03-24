@@ -314,14 +314,14 @@ export default function DivisionPage() {
 
   const tabActive = (active: boolean) =>
     active
-      ? "bg-primary text-primary-foreground border-primary shadow-sm"
-      : "bg-card border-border text-foreground hover:bg-muted/50";
+      ? "bg-gradient-to-r from-primary to-red-500 text-white border-red-400/80 shadow-[0_10px_30px_-14px_rgba(239,68,68,0.75)] ring-1 ring-red-300/30"
+      : "bg-zinc-900/70 backdrop-blur-sm border-zinc-700/80 text-zinc-200 hover:bg-zinc-800/80 hover:border-zinc-500/80";
 
   const tabDesktop = (active: boolean) =>
-    `px-4 py-2.5 rounded-xl border text-sm font-medium transition active:scale-[0.98] ${tabActive(active)}`;
+    `px-5 py-2.5 rounded-2xl border text-sm font-semibold tracking-[0.01em] transition-all duration-200 active:scale-[0.98] ${tabActive(active)}`;
 
   const tabMobile = (active: boolean) =>
-    `flex-1 min-h-[52px] rounded-xl border text-sm font-medium transition active:scale-[0.98] ${tabActive(active)}`;
+    `flex-1 min-h-[52px] rounded-2xl border text-sm font-semibold tracking-[0.01em] transition-all duration-200 active:scale-[0.98] ${tabActive(active)}`;
 
   return (
     <div className="flex h-[100dvh] min-h-0 bg-background overflow-hidden">
@@ -335,7 +335,7 @@ export default function DivisionPage() {
           <MotivationalBar />
 
           {/* Abas no desktop / tablet */}
-          <div className="hidden md:flex flex-wrap gap-2">
+          <div className="hidden md:flex flex-wrap gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-2 backdrop-blur-sm">
             <button
               type="button"
               onClick={() => setView("calendar")}
