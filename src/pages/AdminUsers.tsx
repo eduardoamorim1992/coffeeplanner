@@ -148,6 +148,7 @@ export default function AdminUsers() {
           nome: cleanNome,
           email: cleanEmail,
           role,
+          created_at: new Date().toISOString(),
         },
         { onConflict: "id" }
       );

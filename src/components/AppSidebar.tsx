@@ -11,6 +11,7 @@ import {
   Settings,
   User,
   KeyRound,
+  CalendarCheck,
 } from "lucide-react";
 
 // Hierarquia de cargos — cima = maior nível, baixo = menor nível
@@ -70,6 +71,7 @@ export default function AppSidebar() {
   const [users, setUsers] = useState<any[]>([]);
   const [pendingTotals, setPendingTotals] = useState<Record<string, number>>({});
   const [me, setMe] = useState<any>(null);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -92,11 +94,11 @@ export default function AppSidebar() {
 
     const role = String(meData.role || "").toLowerCase().trim();
 
-    // 🔥 ADMIN → TODOS
+    // 🔥 ADMIN → TODOS (inclui created_at e ultimo_pagamento para monitorar pagamentos)
     if (role === "admin") {
       const { data } = await supabase
         .from("users")
-        .select("id, nome, role")
+        .select("id, nome, role, created_at, ultimo_pagamento")
         .order("nome");
 
       setUsers(data || []);
@@ -292,17 +294,31 @@ export default function AppSidebar() {
         {/* 🔥 FOOTER COM CONFIGURAÇÕES */}
         <div className="p-2 border-t border-zinc-800 space-y-2 pb-safe md:pb-2 shrink-0">
           {me?.role === "admin" && (
-            <button
-              type="button"
-              onClick={() => {
-                navigate("/admin/users");
-                setIsMobileOpen(false);
-              }}
-              className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 active:bg-zinc-800/80"
-            >
-              <Settings size={18} />
-              {!collapsed && "Gerenciar Usuários"}
-            </button>
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  navigate("/admin/users");
+                  setIsMobileOpen(false);
+                }}
+                className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 active:bg-zinc-800/80"
+              >
+                <Settings size={18} />
+                {!collapsed && "Gerenciar Usuários"}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowPaymentModal(true);
+                  setIsMobileOpen(false);
+                }}
+                title="Ver datas de cadastro — monitorar pagamento a cada 30 dias"
+                className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-amber-400/90 hover:bg-amber-500/10 hover:text-amber-300 border border-amber-500/30"
+              >
+                <CalendarCheck size={18} />
+                {!collapsed && "Datas de cadastro"}
+              </button>
+            </>
           )}
 
           <button
@@ -330,6 +346,167 @@ export default function AppSidebar() {
           </button>
         </div>
       </aside>
+
+      {/* Modal Datas de cadastro — apenas admin */}
+      {showPaymentModal && me?.role === "admin" && (
+        <PaymentDatesModal
+          users={users}
+          onClose={() => setShowPaymentModal(false)}
+          onMarkPaid={loadUsers}
+        />
+      )}
     </>
+  );
+}
+
+function formatDateBR(dateStr: string | null | undefined): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function addDays(dateStr: string | null | undefined, days: number): string {
+  if (!dateStr) return "—";
+  try {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return "—";
+    d.setDate(d.getDate() + days);
+    return d.toLocaleDateString("pt-BR", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+    });
+  } catch {
+    return "—";
+  }
+}
+
+function getProximoVencimento(dateStr: string | null | undefined): Date | null {
+  if (!dateStr) return null;
+  try {
+    const d = new Date(dateStr);
+    if (Number.isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() + 30);
+    return d;
+  } catch {
+    return null;
+  }
+}
+
+function isVencido(dateStr: string | null | undefined): boolean {
+  const prox = getProximoVencimento(dateStr);
+  if (!prox) return false;
+  const hoje = new Date();
+  hoje.setHours(0, 0, 0, 0);
+  prox.setHours(0, 0, 0, 0);
+  return prox < hoje;
+}
+
+function PaymentDatesModal({
+  users,
+  onClose,
+  onMarkPaid,
+}: {
+  users: any[];
+  onClose: () => void;
+  onMarkPaid: () => void;
+}) {
+  const [markingId, setMarkingId] = useState<string | null>(null);
+
+  async function handleMarkPaid(userId: string) {
+    setMarkingId(userId);
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({ ultimo_pagamento: new Date().toISOString() })
+        .eq("id", userId);
+
+      if (!error) onMarkPaid();
+    } finally {
+      setMarkingId(null);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[99999] flex items-center justify-center p-4">
+      <div
+        className="absolute inset-0 bg-black/70"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div
+        className="relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl"
+        role="dialog"
+        aria-label="Datas de cadastro para monitoramento de pagamento"
+      >
+        <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-700">
+          <h3 className="text-lg font-semibold text-white">
+            Datas de cadastro
+          </h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="text-zinc-400 hover:text-white p-1"
+            aria-label="Fechar"
+          >
+            <X size={20} />
+          </button>
+        </div>
+        <p className="px-4 pt-2 text-xs text-zinc-500 shrink-0">
+          Ciclo de pagamento a cada 30 dias
+        </p>
+        <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
+          {sortUsersByHierarchy(users).map((u) => {
+            const baseDate = u.ultimo_pagamento || u.created_at;
+            const cadastro = formatDateBR(u.created_at);
+            const proximoStr = addDays(baseDate, 30);
+            const vencido = isVencido(baseDate);
+
+            return (
+              <div
+                key={u.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 border-b border-zinc-800 last:border-0"
+              >
+                <div>
+                  <div className="font-medium text-zinc-100">{u.nome}</div>
+                  <div className="text-xs text-zinc-500 capitalize">{u.role}</div>
+                  <div className="text-xs text-zinc-400 mt-0.5">
+                    Cadastro: <span className="text-zinc-200">{cadastro}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <div className="text-right">
+                    <div
+                      className={`text-sm font-medium ${
+                        vencido ? "text-red-500" : "text-emerald-400/90"
+                      }`}
+                    >
+                      {vencido ? "Vencido" : `Próximo: ${proximoStr}`}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleMarkPaid(u.id)}
+                    disabled={markingId === u.id}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold disabled:opacity-50"
+                  >
+                    {markingId === u.id ? "..." : "PAGO"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
