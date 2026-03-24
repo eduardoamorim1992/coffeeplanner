@@ -6,6 +6,7 @@ interface OKRItem {
   objective: string;
   keyResults: string[];
   createdAt: string;
+  completed: boolean;
 }
 
 export function OKRPanel() {
@@ -15,6 +16,7 @@ export function OKRPanel() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [toggleBusyId, setToggleBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -42,7 +44,7 @@ export function OKRPanel() {
 
     const { data, error } = await supabase
       .from("okrs")
-      .select("id, objective, key_results, created_at")
+      .select("id, objective, key_results, created_at, completed")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -57,6 +59,7 @@ export function OKRPanel() {
       objective: item.objective || "",
       keyResults: Array.isArray(item.key_results) ? item.key_results : [],
       createdAt: item.created_at || "",
+      completed: Boolean(item.completed),
     }));
 
     setOkrs(mapped);
@@ -99,8 +102,9 @@ export function OKRPanel() {
         user_id: userId,
         objective: cleanObjective,
         key_results: cleanKeyResults,
+        completed: false,
       })
-      .select("id, objective, key_results, created_at")
+      .select("id, objective, key_results, created_at, completed")
       .single();
 
     if (error || !data) {
@@ -114,6 +118,7 @@ export function OKRPanel() {
       objective: data.objective || "",
       keyResults: Array.isArray(data.key_results) ? data.key_results : [],
       createdAt: data.created_at || "",
+      completed: Boolean((data as { completed?: boolean }).completed),
     };
 
     setOkrs((prev) => [item, ...prev]);
@@ -136,6 +141,29 @@ export function OKRPanel() {
     }
 
     setOkrs((prev) => prev.filter((okr) => okr.id !== id));
+  }
+
+  async function setOKRCompleted(id: string, completed: boolean) {
+    setMessage("");
+    setToggleBusyId(id);
+
+    const { error } = await supabase
+      .from("okrs")
+      .update({ completed })
+      .eq("id", id);
+
+    if (error) {
+      setMessage(
+        "Erro ao atualizar status do OKR. Verifique se a coluna completed existe no Supabase."
+      );
+      setToggleBusyId(null);
+      return;
+    }
+
+    setOkrs((prev) =>
+      prev.map((o) => (o.id === id ? { ...o, completed } : o))
+    );
+    setToggleBusyId(null);
   }
 
   return (
@@ -204,9 +232,29 @@ export function OKRPanel() {
         )}
 
         {okrs.map((okr) => (
-          <div key={okr.id} className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-2">
+          <div
+            key={okr.id}
+            className={`rounded-xl p-3 sm:p-4 space-y-3 border transition-colors ${
+              okr.completed
+                ? "bg-emerald-950/35 border-emerald-500/60 ring-1 ring-emerald-500/25"
+                : "bg-card border-border"
+            }`}
+          >
             <div className="flex items-start justify-between gap-2">
-              <h4 className="font-semibold text-sm sm:text-base leading-snug pr-2">{okr.objective}</h4>
+              <div className="min-w-0 flex-1">
+                {okr.completed ? (
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-emerald-400 mb-1.5">
+                    ✓ OKR concluído
+                  </span>
+                ) : null}
+                <h4
+                  className={`font-semibold text-sm sm:text-base leading-snug pr-2 ${
+                    okr.completed ? "text-emerald-50" : ""
+                  }`}
+                >
+                  {okr.objective}
+                </h4>
+              </div>
               <button
                 type="button"
                 onClick={() => removeOKR(okr.id)}
@@ -216,11 +264,37 @@ export function OKRPanel() {
               </button>
             </div>
 
-            <ul className="space-y-1 text-sm text-muted-foreground">
+            <ul
+              className={`space-y-1 text-sm ${
+                okr.completed ? "text-emerald-100/85" : "text-muted-foreground"
+              }`}
+            >
               {okr.keyResults.map((kr, index) => (
                 <li key={index}>• {kr}</li>
               ))}
             </ul>
+
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              {!okr.completed ? (
+                <button
+                  type="button"
+                  disabled={toggleBusyId === okr.id}
+                  onClick={() => setOKRCompleted(okr.id, true)}
+                  className="min-h-[40px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-sm shadow-emerald-900/40 disabled:opacity-60 active:scale-[0.98] transition"
+                >
+                  {toggleBusyId === okr.id ? "Salvando..." : "OKR concluído"}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={toggleBusyId === okr.id}
+                  onClick={() => setOKRCompleted(okr.id, false)}
+                  className="min-h-[40px] px-4 py-2 rounded-xl border border-emerald-500/50 bg-emerald-950/40 text-emerald-200 text-sm font-medium hover:bg-emerald-900/50 disabled:opacity-60 active:scale-[0.98] transition"
+                >
+                  {toggleBusyId === okr.id ? "Salvando..." : "Reabrir OKR"}
+                </button>
+              )}
+            </div>
           </div>
         ))}
       </div>

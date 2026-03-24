@@ -1,90 +1,152 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { MailCheck, AlertCircle } from "lucide-react";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const RESEND_COOLDOWN_SEC = 60;
 
 export default function Login() {
-
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [resetLoading, setResetLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const [messageKind, setMessageKind] = useState<"info" | "success" | "error">(
+    "info"
+  );
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const state = location.state as { message?: string } | null;
+    if (state?.message) {
+      setMessage(state.message);
+      setMessageKind("success");
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location, navigate]);
+
+  useEffect(() => {
+    return () => {
+      if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    };
+  }, []);
+
+  function startCooldown() {
+    setCooldown(RESEND_COOLDOWN_SEC);
+    if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+    cooldownTimer.current = setInterval(() => {
+      setCooldown((s) => {
+        if (s <= 1) {
+          if (cooldownTimer.current) clearInterval(cooldownTimer.current);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  }
 
   const handleLogin = async () => {
     setMessage("");
+    setMessageKind("info");
+
+    if (!email.trim() || !password) {
+      setMessageKind("error");
+      setMessage("Informe email e senha.");
+      return;
+    }
 
     setLoading(true);
 
     const { data, error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     });
 
-    console.log("LOGIN:", data, error);
-
     if (error) {
-      alert(error.message);
+      setMessageKind("error");
+      setMessage(
+        error.message.includes("Invalid login")
+          ? "Email ou senha incorretos."
+          : error.message
+      );
       setLoading(false);
       return;
     }
 
     if (!data?.user) {
-      alert("Erro ao logar");
+      setMessageKind("error");
+      setMessage("Não foi possível entrar. Tente novamente.");
       setLoading(false);
       return;
     }
 
-    // 🔥 BUSCA USUÁRIO
     const { data: userData, error: userError } = await supabase
       .from("users")
       .select("*")
-      .eq("email", email)
+      .eq("email", email.trim())
       .single();
 
-    console.log("USER:", userData);
-
     if (userError || !userData) {
-      alert("Usuário não encontrado na tabela users");
+      setMessageKind("error");
+      setMessage("Conta não encontrada. Entre em contato com o administrador.");
       setLoading(false);
       return;
     }
 
-    // 🔥 AGORA FUNCIONA NORMAL
     navigate(`/user/${userData.id}`);
   };
 
   const handleForgotPassword = async () => {
     setMessage("");
+    const clean = email.trim().toLowerCase();
 
-    if (!email.trim()) {
-      setMessage("Informe seu email para recuperar a senha.");
+    if (!clean) {
+      setMessageKind("error");
+      setMessage("Digite seu email acima e clique novamente em Esqueci minha senha.");
+      return;
+    }
+
+    if (!EMAIL_RE.test(clean)) {
+      setMessageKind("error");
+      setMessage("Digite um email válido.");
+      return;
+    }
+
+    if (cooldown > 0) {
       return;
     }
 
     setResetLoading(true);
+    setMessageKind("info");
 
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+    const { error } = await supabase.auth.resetPasswordForEmail(clean, {
       redirectTo: `${window.location.origin}/definir-senha`,
     });
 
+    setResetLoading(false);
+
     if (error) {
+      setMessageKind("error");
       setMessage(error.message);
-      setResetLoading(false);
       return;
     }
 
-    setMessage("Enviamos o link de recuperacao para seu email.");
-    setResetLoading(false);
+    setMessageKind("success");
+    setMessage(
+      "Se existir uma conta com esse email, enviamos um link para redefinir a senha. Confira a caixa de entrada e o spam. O link expira em poucas horas."
+    );
+    startCooldown();
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-
-      <div className="glass-card p-8 w-80 space-y-4">
-
-        <h2 className="text-lg font-semibold text-center">
+    <div className="min-h-screen flex items-center justify-center bg-background px-4">
+      <div className="glass-card p-8 w-full max-w-sm space-y-4">
+        <h2 className="text-lg font-semibold text-center text-foreground">
           Login
         </h2>
 
@@ -93,7 +155,8 @@ export default function Login() {
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full px-3 py-2 rounded bg-muted/30 border border-border text-sm"
+          autoComplete="email"
+          className="w-full px-3 py-2 rounded-lg bg-muted/30 border border-border text-sm"
         />
 
         <input
@@ -101,13 +164,15 @@ export default function Login() {
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full px-3 py-2 rounded bg-muted/30 border border-border text-sm"
+          autoComplete="current-password"
+          className="w-full px-3 py-2 rounded-lg bg-muted/30 border border-border text-sm"
         />
 
         <button
+          type="button"
           onClick={handleLogin}
           disabled={loading}
-          className="w-full bg-primary text-white py-2 rounded text-sm"
+          className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium disabled:opacity-60"
         >
           {loading ? "Entrando..." : "Entrar"}
         </button>
@@ -115,18 +180,40 @@ export default function Login() {
         <button
           type="button"
           onClick={handleForgotPassword}
-          disabled={resetLoading}
-          className="w-full text-sm text-zinc-300 hover:text-white underline underline-offset-2 disabled:opacity-60"
+          disabled={resetLoading || cooldown > 0}
+          className="w-full text-sm text-zinc-400 hover:text-white underline underline-offset-2 disabled:opacity-50"
         >
-          {resetLoading ? "Enviando..." : "Esqueci minha senha"}
+          {resetLoading
+            ? "Enviando..."
+            : cooldown > 0
+              ? `Aguarde ${cooldown}s para reenviar`
+              : "Esqueci minha senha"}
         </button>
 
         {message ? (
-          <div className="text-xs text-center text-zinc-300">
-            {message}
+          <div
+            role="status"
+            className={`rounded-lg px-3 py-2.5 text-xs leading-relaxed flex gap-2 ${
+              messageKind === "success"
+                ? "bg-emerald-950/50 border border-emerald-800/60 text-emerald-200"
+                : messageKind === "error"
+                  ? "bg-red-950/40 border border-red-900/60 text-red-200"
+                  : "bg-muted/50 border border-border text-zinc-300"
+            }`}
+          >
+            {messageKind === "success" ? (
+              <MailCheck className="shrink-0 w-4 h-4 mt-0.5 text-emerald-400" />
+            ) : messageKind === "error" ? (
+              <AlertCircle className="shrink-0 w-4 h-4 mt-0.5 text-red-400" />
+            ) : null}
+            <span>{message}</span>
           </div>
         ) : null}
 
+        <p className="text-[10px] text-center text-zinc-500 leading-snug">
+          Na recuperação, use o mesmo email cadastrado. Se não receber em alguns
+          minutos, verifique o spam.
+        </p>
       </div>
     </div>
   );
