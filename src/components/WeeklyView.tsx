@@ -1,6 +1,11 @@
 import { WeekCard } from "./WeekCard";
 import { supabase } from "@/lib/supabase";
 import { useRef } from "react";
+import {
+  sortDayTasks,
+  toggleCalendarDayTask,
+  type CalendarTask,
+} from "@/lib/calendarDayTasks";
 
 function parseLocalDate(dateString: string) {
   const [year, month, day] = dateString.split("-").map(Number);
@@ -18,28 +23,12 @@ function formatDateBR(dateString: string) {
   return `${day}/${month}/${year}`;
 }
 
-interface Task {
-  id: string;
-  title: string;
-  time?: string;
-  completed: boolean;
-  priority: "alta" | "media" | "baixa";
-}
-
 interface Props {
-  calendarData: Record<string, Task[]>;
+  calendarData: Record<string, CalendarTask[]>;
   setCalendarData: React.Dispatch<
-    React.SetStateAction<Record<string, Task[]>>
+    React.SetStateAction<Record<string, CalendarTask[]>>
   >;
   selectedDate: string;
-}
-
-function sortTasks(tasks: Task[]) {
-  return [...tasks].sort((a, b) => {
-    if (!a.time) return 1;
-    if (!b.time) return -1;
-    return a.time.localeCompare(b.time);
-  });
 }
 
 export function WeeklyView({
@@ -89,7 +78,7 @@ export function WeeklyView({
       dayName: d.toLocaleDateString("pt-BR", {
         weekday: "long",
       }),
-      tasks: sortTasks(calendarData[iso] || []),
+      tasks: sortDayTasks(calendarData[iso] || []),
     });
   }
 
@@ -145,7 +134,7 @@ export function WeeklyView({
 
     setCalendarData((prev) => ({
       ...prev,
-      [dayDate]: sortTasks([
+      [dayDate]: sortDayTasks([
         ...(prev[dayDate] || []),
         {
           id: data.id,
@@ -158,7 +147,7 @@ export function WeeklyView({
     }));
   }
 
-  async function editTask(dayDate: string, task: Task) {
+  async function editTask(dayDate: string, task: CalendarTask) {
     const nextTitleRaw = window.prompt(
       "Editar descrição da atividade:",
       task.title
@@ -196,7 +185,7 @@ export function WeeklyView({
 
     setCalendarData((prev) => ({
       ...prev,
-      [dayDate]: sortTasks(
+      [dayDate]: sortDayTasks(
         (prev[dayDate] || []).map((t) =>
           t.id === task.id
             ? {
@@ -211,26 +200,12 @@ export function WeeklyView({
   }
 
   async function toggleTask(dayDate: string, taskId: string) {
-
-    const tasks = calendarData[dayDate] || [];
-    const task = tasks.find((t) => t.id === taskId);
-    if (!task) return;
-
-    const newStatus = !task.completed;
-
-    await supabase
-      .from("atividades")
-      .update({ completed: newStatus })
-      .eq("id", taskId);
-
-    setCalendarData((prev) => ({
-      ...prev,
-      [dayDate]: sortTasks(
-        (prev[dayDate] || []).map((t) =>
-          t.id === taskId ? { ...t, completed: newStatus } : t
-        )
-      ),
-    }));
+    await toggleCalendarDayTask(
+      dayDate,
+      taskId,
+      calendarData,
+      setCalendarData
+    );
   }
 
   async function deleteTask(dayDate: string, taskId: string) {
@@ -249,7 +224,7 @@ export function WeeklyView({
   }
 
   // 🔥 REPLICAR TASK (CORRIGIDO)
-  async function replicateTask(task: Task, startDate: string) {
+  async function replicateTask(task: CalendarTask, startDate: string) {
 
     const userId = await getUserId();
     if (!userId) return;
@@ -337,8 +312,8 @@ export function WeeklyView({
   }
 
   return (
-    <div className="w-full pb-2 pb-safe md:pb-2">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-3 w-full">
+    <div className="w-full min-w-0 pb-2 pb-safe md:pb-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2 sm:gap-3 w-full min-w-0 [&>*]:min-w-0">
         {week.map((day, i) => (
           <WeekCard
             key={day.date}

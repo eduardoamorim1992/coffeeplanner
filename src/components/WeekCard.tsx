@@ -68,7 +68,7 @@ export function WeekCard({
 
   return (
     <div
-      className={`glass-card flex flex-col w-full flex-1 transition-all duration-300 ${
+      className={`glass-card flex flex-col w-full min-w-0 flex-1 transition-all duration-300 ${
         isToday ? "border-primary/50 glow-red" : ""
       }`}
       style={{ animationDelay: `${index * 60}ms` }}

@@ -1,5 +1,6 @@
 import { MonthlyView } from "@/components/MonthlyView";
 import { WeeklyView } from "@/components/WeeklyView";
+import { MiniDayTaskList } from "@/components/MiniDayTaskList";
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -83,20 +84,30 @@ export function CalendarView({
       </div>
 
       {calendarMode === "month" ? (
-        <div className="w-full">
-          <MonthlyView
-            calendarData={calendarData}
-            currentMonth={viewMonth}
-            currentYear={viewYear}
-            onMonthChange={changeMonth}
-            onSelectDate={(date) => {
-              setSelectedDate(date);
-              setCalendarMode("week");
-            }}
-          />
+        <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 w-full min-w-0 lg:items-start">
+          <div className="w-full max-w-4xl shrink-0">
+            <MonthlyView
+              calendarData={calendarData}
+              currentMonth={viewMonth}
+              currentYear={viewYear}
+              selectedDate={selectedDate}
+              onMonthChange={changeMonth}
+              onSelectDate={(date) => {
+                setSelectedDate(date);
+              }}
+            />
+          </div>
+          <div className="w-full lg:flex-1 lg:min-w-0 lg:max-w-md xl:max-w-lg">
+            <MiniDayTaskList
+              isoDate={selectedDate}
+              calendarData={calendarData}
+              setCalendarData={setCalendarData}
+              onOpenWeek={() => setCalendarMode("week")}
+            />
+          </div>
         </div>
       ) : (
-        <div className="w-full">
+        <div className="w-full min-w-0">
           <WeeklyView
             calendarData={calendarData}
             setCalendarData={setCalendarData}

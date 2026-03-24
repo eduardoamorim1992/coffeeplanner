@@ -19,6 +19,8 @@ interface Props {
   calendarData: Record<string, Task[]>;
   currentMonth: number;
   currentYear: number;
+  /** Dia em foco na mini-lista ao lado (YYYY-MM-DD) */
+  selectedDate?: string;
   onMonthChange: (offset: number) => void;
   onSelectDate: (date: string) => void;
 }
@@ -27,6 +29,7 @@ export function MonthlyView({
   calendarData,
   currentMonth,
   currentYear,
+  selectedDate,
   onMonthChange,
   onSelectDate,
 }: Props) {
@@ -90,7 +93,7 @@ export function MonthlyView({
   const weekLong = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
   return (
-    <div className="space-y-3 sm:space-y-6 w-full h-full flex flex-col -mx-1 sm:mx-0">
+    <div className="space-y-2 sm:space-y-4 w-full h-full flex flex-col">
       {/* HEADER */}
       <div className="flex justify-between items-center gap-2 px-1">
         <button
@@ -128,7 +131,7 @@ export function MonthlyView({
       </div>
 
       {/* DIAS DA SEMANA */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-2 text-center text-[10px] sm:text-xs text-muted-foreground px-0.5">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5 text-center text-[10px] sm:text-xs text-muted-foreground px-0">
         {weekLong.map((day, i) => (
           <div key={day} className="truncate font-medium">
             <span className="sm:hidden">{weekShort[i]}</span>
@@ -138,12 +141,12 @@ export function MonthlyView({
       </div>
 
       {/* GRID */}
-      <div className="grid grid-cols-7 gap-1 sm:gap-2 flex-1 px-0.5 overflow-visible">
+      <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5 flex-1 px-0 overflow-visible">
 
         {days.map((date, index) => {
 
           if (!date) {
-            return <div key={index} className="min-h-[4.5rem] sm:h-24" />;
+            return <div key={index} className="min-h-[3.5rem] sm:min-h-[5rem]" />;
           }
 
           const tasks = calendarData[date] || [];
@@ -165,6 +168,7 @@ export function MonthlyView({
           const completedTasks = tasks.filter((t) => t.completed);
 
           const status = getStatus(tasks);
+          const isSelected = selectedDate === date;
 
           return (
             <button
@@ -174,12 +178,15 @@ export function MonthlyView({
               onMouseEnter={(e) => tasks.length > 0 && showTooltip(date, e.currentTarget.getBoundingClientRect())}
               onMouseLeave={hideTooltip}
               className={`
-                relative group min-h-[4.5rem] sm:min-h-[6rem] border rounded-md sm:rounded-lg p-1 sm:p-2 text-left cursor-pointer transition-all active:scale-[0.98]
+                relative group min-h-[3.5rem] sm:min-h-[5rem] border rounded-md sm:rounded-lg p-0.5 sm:p-1.5 text-left cursor-pointer transition-all active:scale-[0.98]
                 touch-manipulation
 
                 ${status === "done" && "bg-green-500/20 border-green-500"}
                 ${status === "pending" && high > 0 && "bg-red-500/10 border-red-500"}
                 ${status === "mixed" && "bg-yellow-500/10 border-yellow-500"}
+                ${status === "empty" && !isSelected && "border-zinc-700/80 bg-zinc-900/20"}
+
+                ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background z-10" : ""}
 
                 sm:hover:scale-[1.02]
               `}

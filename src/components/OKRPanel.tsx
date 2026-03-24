@@ -7,10 +7,35 @@ interface OKRItem {
   keyResults: string[];
   createdAt: string;
   completed: boolean;
+  /** YYYY-MM-DD ou null */
+  targetDate: string | null;
+}
+
+function formatTargetDateBR(iso: string | null): string | null {
+  if (!iso || typeof iso !== "string") return null;
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return null;
+  const date = new Date(y, m - 1, d);
+  return date.toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function isTargetOverdue(iso: string | null, completed: boolean): boolean {
+  if (!iso || completed) return false;
+  const [y, m, d] = iso.split("-").map(Number);
+  const target = new Date(y, m - 1, d);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  target.setHours(0, 0, 0, 0);
+  return target < today;
 }
 
 export function OKRPanel() {
   const [objective, setObjective] = useState("");
+  const [targetDateInput, setTargetDateInput] = useState("");
   const [keyResults, setKeyResults] = useState<string[]>([""]);
   const [okrs, setOkrs] = useState<OKRItem[]>([]);
   const [userId, setUserId] = useState<string | null>(null);
@@ -44,7 +69,7 @@ export function OKRPanel() {
 
     const { data, error } = await supabase
       .from("okrs")
-      .select("id, objective, key_results, created_at, completed")
+      .select("id, objective, key_results, created_at, completed, target_date")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -60,6 +85,10 @@ export function OKRPanel() {
       keyResults: Array.isArray(item.key_results) ? item.key_results : [],
       createdAt: item.created_at || "",
       completed: Boolean(item.completed),
+      targetDate:
+        item.target_date != null && item.target_date !== ""
+          ? String(item.target_date).slice(0, 10)
+          : null,
     }));
 
     setOkrs(mapped);
@@ -96,6 +125,9 @@ export function OKRPanel() {
 
     setSaving(true);
 
+    const targetDate =
+      targetDateInput.trim() !== "" ? targetDateInput.trim() : null;
+
     const { data, error } = await supabase
       .from("okrs")
       .insert({
@@ -103,8 +135,9 @@ export function OKRPanel() {
         objective: cleanObjective,
         key_results: cleanKeyResults,
         completed: false,
+        target_date: targetDate,
       })
-      .select("id, objective, key_results, created_at, completed")
+      .select("id, objective, key_results, created_at, completed, target_date")
       .single();
 
     if (error || !data) {
@@ -113,16 +146,30 @@ export function OKRPanel() {
       return;
     }
 
+    const row = data as {
+      id: string;
+      objective?: string;
+      key_results?: string[];
+      created_at?: string;
+      completed?: boolean;
+      target_date?: string | null;
+    };
+
     const item: OKRItem = {
-      id: data.id,
-      objective: data.objective || "",
-      keyResults: Array.isArray(data.key_results) ? data.key_results : [],
-      createdAt: data.created_at || "",
-      completed: Boolean((data as { completed?: boolean }).completed),
+      id: row.id,
+      objective: row.objective || "",
+      keyResults: Array.isArray(row.key_results) ? row.key_results : [],
+      createdAt: row.created_at || "",
+      completed: Boolean(row.completed),
+      targetDate:
+        row.target_date != null && row.target_date !== ""
+          ? String(row.target_date).slice(0, 10)
+          : null,
     };
 
     setOkrs((prev) => [item, ...prev]);
     setObjective("");
+    setTargetDateInput("");
     setKeyResults([""]);
     setSaving(false);
   }
@@ -183,6 +230,21 @@ export function OKRPanel() {
           placeholder="Objective (ex: Aumentar eficiência operacional)"
           className="w-full min-h-[44px] px-3 py-2.5 rounded-xl bg-muted/30 border border-border text-base sm:text-sm"
         />
+
+        <div className="space-y-1.5">
+          <label className="block text-xs font-medium text-muted-foreground">
+            Prazo para atingir a meta
+          </label>
+          <input
+            type="date"
+            value={targetDateInput}
+            onChange={(e) => setTargetDateInput(e.target.value)}
+            className="w-full sm:max-w-[240px] min-h-[44px] px-3 py-2.5 rounded-xl bg-muted/30 border border-border text-base sm:text-sm [color-scheme:dark]"
+          />
+          <p className="text-[11px] text-muted-foreground/90">
+            Opcional. Ajuda a lembrar até quando o objetivo deve ser concluído.
+          </p>
+        </div>
 
         <div className="space-y-2">
           {keyResults.map((kr, index) => (
@@ -254,6 +316,28 @@ export function OKRPanel() {
                 >
                   {okr.objective}
                 </h4>
+                {okr.targetDate ? (
+                  <p
+                    className={`mt-1.5 text-xs ${
+                      okr.completed
+                        ? "text-emerald-300/90"
+                        : isTargetOverdue(okr.targetDate, okr.completed)
+                          ? "text-amber-400 font-medium"
+                          : "text-muted-foreground"
+                    }`}
+                  >
+                    📅 Meta até{" "}
+                    <span className="tabular-nums">
+                      {formatTargetDateBR(okr.targetDate)}
+                    </span>
+                    {!okr.completed &&
+                    isTargetOverdue(okr.targetDate, okr.completed) ? (
+                      <span className="ml-1.5 text-amber-500">
+                        (prazo vencido)
+                      </span>
+                    ) : null}
+                  </p>
+                ) : null}
               </div>
               <button
                 type="button"
