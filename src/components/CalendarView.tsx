@@ -20,8 +20,6 @@ interface CalendarViewProps {
   loadingReplicate: boolean;
   onReplicateMonth: () => void;
   canReplicate: boolean;
-  syncingOutlook?: boolean;
-  onSyncOutlook?: () => void;
   icsUrl?: string;
   onIcsUrlChange?: (value: string) => void;
   syncingIcs?: boolean;
@@ -38,8 +36,6 @@ export function CalendarView({
   loadingReplicate,
   onReplicateMonth,
   canReplicate,
-  syncingOutlook = false,
-  onSyncOutlook,
   icsUrl = "",
   onIcsUrlChange,
   syncingIcs = false,
@@ -84,17 +80,6 @@ export function CalendarView({
         </div>
 
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          {onSyncOutlook ? (
-            <button
-              type="button"
-              onClick={onSyncOutlook}
-              disabled={syncingOutlook}
-              className="w-full sm:w-auto min-h-[44px] bg-indigo-600 px-4 py-2.5 rounded-xl text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 active:scale-[0.98] transition"
-            >
-              {syncingOutlook ? "Sincronizando..." : "📅 Sincronizar Outlook"}
-            </button>
-          ) : null}
-
           {canReplicate && (
             <button
               type="button"
