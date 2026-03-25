@@ -8,6 +8,20 @@ type MarketItem = {
   change: number | null;
 };
 
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit = {},
+  timeoutMs = 12000
+) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 function parseNum(v: unknown): number | null {
   if (v == null) return null;
   const s = String(v).trim().replace(",", ".");
@@ -15,12 +29,29 @@ function parseNum(v: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseLocaleNumber(v: unknown): number | null {
+  if (v == null) return null;
+  let raw = String(v).trim();
+  if (!raw) return null;
+  raw = raw.replace(/[^\d,.-]/g, "");
+  if (!raw) return null;
+
+  if (raw.includes(".") && raw.includes(",")) {
+    raw = raw.replace(/\./g, "").replace(",", ".");
+  } else {
+    raw = raw.replace(",", ".");
+  }
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
 async function fetchUsdAwesome(): Promise<MarketItem | null> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     "https://economia.awesomeapi.com.br/json/last/USD-BRL",
     {
       headers: { Accept: "application/json" },
-    }
+    },
+    12000
   );
   if (!res.ok) return null;
   const json = (await res.json()) as Record<string, Record<string, string>>;
@@ -36,8 +67,10 @@ async function fetchUsdAwesome(): Promise<MarketItem | null> {
 }
 
 async function fetchUsdBinance(): Promise<MarketItem | null> {
-  const res = await fetch(
-    "https://api.binance.com/api/v3/ticker/24hr?symbol=USDTBRL"
+  const res = await fetchWithTimeout(
+    "https://api.binance.com/api/v3/ticker/24hr?symbol=USDTBRL",
+    undefined,
+    12000
   );
   if (!res.ok) return null;
   const j = (await res.json()) as {
@@ -54,47 +87,51 @@ async function fetchUsdBinance(): Promise<MarketItem | null> {
 }
 
 async function fetchUsd(): Promise<MarketItem> {
-  const a = await fetchUsdAwesome();
-  if (a && a.value != null) return a;
-  const b = await fetchUsdBinance();
-  if (b && b.value != null) return b;
+  try {
+    const a = await fetchUsdAwesome();
+    if (a && a.value != null) return a;
+  } catch {
+    // Fallback na Binance abaixo.
+  }
+  try {
+    const b = await fetchUsdBinance();
+    if (b && b.value != null) return b;
+  } catch {
+    // Continua para retorno nulo padronizado.
+  }
   return { name: "💵 Dólar", value: null, change: null };
 }
 
-function extractCommodity(html: string, labels: string[]): number | null {
-  const flat = html.replace(/\s+/g, " ");
-  for (const label of labels) {
-    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const patterns = [
-      new RegExp(`${escaped}[^\\d]{0,120}?(\\d{1,3}[\\.,]\\d{2,4})`, "i"),
-      new RegExp(`${escaped}[^\\d]{0,300}?(\\d{1,2}[\\.,]\\d{4})`, "i"),
-    ];
-    for (const re of patterns) {
-      const m = flat.match(re);
-      if (m?.[1]) {
-        let raw = m[1];
-        if (raw.includes(".") && raw.includes(",")) {
-          raw = raw.replace(/\./g, "").replace(",", ".");
-        } else {
-          raw = raw.replace(",", ".");
-        }
-        const n = parseFloat(raw);
-        if (Number.isFinite(n) && n > 0 && n < 1_000_000) return n;
-      }
-    }
-  }
-  return null;
+function extractSectionValue(
+  html: string,
+  sectionLabel: string
+): { value: number | null; change: number | null } {
+  const escaped = sectionLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const sectionRegex = new RegExp(
+    `<h2>[^<]*${escaped}[^<]*<\\/h2>[\\s\\S]{0,8000}?<tbody>[\\s\\S]{0,5000}?<tr[^>]*>[\\s\\S]{0,1200}?<td[^>]*>[^<]*<\\/td>[\\s\\S]{0,1200}?<td[^>]*>([^<]+)<\\/td>(?:[\\s\\S]{0,1200}?<td[^>]*>([^<]+)<\\/td>)?`,
+    "i"
+  );
+  const match = html.match(sectionRegex);
+  if (!match) return { value: null, change: null };
+
+  const value = parseLocaleNumber(match[1]);
+  const change = parseLocaleNumber(match[2] ?? null);
+  return { value, change };
 }
 
 async function fetchCommodityPage(): Promise<string> {
-  const res = await fetch("https://www.noticiasagricolas.com.br/cotacoes", {
-    headers: {
-      "User-Agent":
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-      Accept: "text/html,application/xhtml+xml",
-      "Accept-Language": "pt-BR,pt;q=0.9",
+  const res = await fetchWithTimeout(
+    "https://www.noticiasagricolas.com.br/cotacoes",
+    {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        Accept: "text/html,application/xhtml+xml",
+        "Accept-Language": "pt-BR,pt;q=0.9",
+      },
     },
-  });
+    18000
+  );
   if (!res.ok) throw new Error(`cotacoes HTTP ${res.status}`);
   return res.text();
 }
@@ -114,30 +151,28 @@ export default async function handler(req: { method?: string }, res: any) {
       html = "";
     }
 
-    const agro =
-      html.length > 500
-        ? [
-            {
-              name: "🌱 Soja",
-              value: extractCommodity(html, ["Soja", "soja"]),
-              change: null as number | null,
-            },
-            {
-              name: "🌽 Milho",
-              value: extractCommodity(html, ["Milho", "milho"]),
-              change: null as number | null,
-            },
-            {
-              name: "🍬 Açúcar",
-              value: extractCommodity(html, ["Açúcar", "Acucar", "açúcar"]),
-              change: null as number | null,
-            },
-          ]
-        : [
-            { name: "🌱 Soja", value: null, change: null },
-            { name: "🌽 Milho", value: null, change: null },
-            { name: "🍬 Açúcar", value: null, change: null },
-          ];
+    const soja = html.length > 500 ? extractSectionValue(html, "Soja") : null;
+    const milho = html.length > 500 ? extractSectionValue(html, "Milho") : null;
+    const acucar =
+      html.length > 500 ? extractSectionValue(html, "Açúcar") : null;
+
+    const agro = [
+      {
+        name: "🌱 Soja",
+        value: soja?.value ?? null,
+        change: soja?.change ?? null,
+      },
+      {
+        name: "🌽 Milho",
+        value: milho?.value ?? null,
+        change: milho?.change ?? null,
+      },
+      {
+        name: "🍬 Açúcar",
+        value: acucar?.value ?? null,
+        change: acucar?.change ?? null,
+      },
+    ];
 
     const items: MarketItem[] = [usdItem, ...agro];
     const body = {

@@ -7,6 +7,7 @@ import { CalendarView } from "@/components/CalendarView";
 import { DashboardChart } from "@/components/DashboardChart";
 import { OKRPanel } from "@/components/OKRPanel";
 import { supabase } from "@/lib/supabase";
+import { fetchOutlookEvents } from "@/lib/outlookSync";
 import { useEffect, useRef, useState } from "react";
 
 // 🔥 FORMATAR DATA
@@ -84,6 +85,7 @@ export default function DivisionPage() {
   const [view, setView] = useState<"calendar" | "chart" | "okr">("calendar");
   const [userName, setUserName] = useState("");
   const [loadingReplicate, setLoadingReplicate] = useState(false);
+  const [syncingOutlook, setSyncingOutlook] = useState(false);
   const [me, setMe] = useState<any>(null);
   const notifiedTasksRef = useRef<Set<string>>(new Set());
 
@@ -312,6 +314,89 @@ export default function DivisionPage() {
     loadTasks();
   }
 
+  async function syncOutlookCalendar() {
+    if (!me?.id) {
+      alert("Usuário não identificado para sincronização.");
+      return;
+    }
+    if (userId && userId !== me.id) {
+      alert("A sincronização do Outlook só está disponível no seu próprio calendário.");
+      return;
+    }
+
+    setSyncingOutlook(true);
+    try {
+      const outlookEvents = await fetchOutlookEvents(45);
+      if (outlookEvents.length === 0) {
+        alert("Nenhum compromisso encontrado no Outlook para os próximos dias.");
+        setSyncingOutlook(false);
+        return;
+      }
+
+      const orderedDates = outlookEvents.map((e) => e.date).sort();
+      const rangeStart = orderedDates[0];
+      const rangeEnd = orderedDates[orderedDates.length - 1];
+
+      const { data: existingRows, error: existingError } = await supabase
+        .from("atividades")
+        .select("data, hora, titulo")
+        .eq("user_id", me.id)
+        .gte("data", rangeStart)
+        .lte("data", rangeEnd);
+
+      if (existingError) {
+        throw new Error("Não foi possível validar atividades existentes.");
+      }
+
+      const normalizeTitle = (v: string) => v.trim().toLowerCase();
+      const keyOf = (dateIso: string, time: string | null, title: string) =>
+        `${dateIso}|${time || ""}|${normalizeTitle(title)}`;
+
+      const existingKeys = new Set(
+        (existingRows || []).map((row: any) => keyOf(row.data, row.hora, row.titulo))
+      );
+      const insertKeys = new Set<string>();
+      const inserts: any[] = [];
+
+      for (const ev of outlookEvents) {
+        const key = keyOf(ev.date, ev.time, ev.title);
+        if (existingKeys.has(key) || insertKeys.has(key)) continue;
+        inserts.push({
+          user_id: me.id,
+          data: ev.date,
+          hora: ev.time,
+          titulo: ev.title,
+          prioridade: "media",
+          completed: false,
+        });
+        insertKeys.add(key);
+      }
+
+      if (inserts.length > 0) {
+        const { error: insertError } = await supabase.from("atividades").insert(inserts);
+        if (insertError) {
+          throw new Error("Falha ao salvar compromissos do Outlook.");
+        }
+      }
+
+      await loadTasks();
+      alert(
+        inserts.length > 0
+          ? `Sincronização concluída. ${inserts.length} compromisso(s) importado(s).`
+          : "Sincronização concluída. Nenhum novo compromisso para importar."
+      );
+    } catch (error: unknown) {
+      console.error("syncOutlookCalendar:", error);
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível sincronizar o Outlook agora.";
+      alert(msg);
+    } finally {
+      setSyncingOutlook(false);
+    }
+  }
+
   const tabActive = (active: boolean) =>
     active
       ? "bg-gradient-to-r from-primary to-red-500 text-white border-red-400/80 shadow-[0_10px_30px_-14px_rgba(239,68,68,0.75)] ring-1 ring-red-300/30"
@@ -369,6 +454,8 @@ export default function DivisionPage() {
                 loadingReplicate={loadingReplicate}
                 onReplicateMonth={replicateMonth}
                 canReplicate={!userId || userId === me?.id}
+                syncingOutlook={syncingOutlook}
+                onSyncOutlook={!userId || userId === me?.id ? syncOutlookCalendar : undefined}
               />
             )}
 

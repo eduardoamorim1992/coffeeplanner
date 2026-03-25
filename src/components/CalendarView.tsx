@@ -20,6 +20,8 @@ interface CalendarViewProps {
   loadingReplicate: boolean;
   onReplicateMonth: () => void;
   canReplicate: boolean;
+  syncingOutlook?: boolean;
+  onSyncOutlook?: () => void;
 }
 
 const today = new Date();
@@ -32,6 +34,8 @@ export function CalendarView({
   loadingReplicate,
   onReplicateMonth,
   canReplicate,
+  syncingOutlook = false,
+  onSyncOutlook,
 }: CalendarViewProps) {
   const [calendarMode, setCalendarMode] = useState<"month" | "week">("month");
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -71,16 +75,29 @@ export function CalendarView({
           </button>
         </div>
 
-        {canReplicate && (
-          <button
-            type="button"
-            onClick={onReplicateMonth}
-            disabled={loadingReplicate}
-            className="w-full sm:w-auto min-h-[44px] bg-blue-600 px-4 py-2.5 rounded-xl text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60 active:scale-[0.98] transition"
-          >
-            {loadingReplicate ? "Copiando..." : "🔁 Replicar mês"}
-          </button>
-        )}
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          {onSyncOutlook ? (
+            <button
+              type="button"
+              onClick={onSyncOutlook}
+              disabled={syncingOutlook}
+              className="w-full sm:w-auto min-h-[44px] bg-indigo-600 px-4 py-2.5 rounded-xl text-white text-sm font-medium hover:bg-indigo-700 disabled:opacity-60 active:scale-[0.98] transition"
+            >
+              {syncingOutlook ? "Sincronizando..." : "📅 Sincronizar Outlook"}
+            </button>
+          ) : null}
+
+          {canReplicate && (
+            <button
+              type="button"
+              onClick={onReplicateMonth}
+              disabled={loadingReplicate}
+              className="w-full sm:w-auto min-h-[44px] bg-blue-600 px-4 py-2.5 rounded-xl text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-60 active:scale-[0.98] transition"
+            >
+              {loadingReplicate ? "Copiando..." : "🔁 Replicar mês"}
+            </button>
+          )}
+        </div>
       </div>
 
       {calendarMode === "month" ? (

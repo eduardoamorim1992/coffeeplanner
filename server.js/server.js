@@ -19,6 +19,22 @@ function parseNum(v) {
   return Number.isFinite(n) ? n : null;
 }
 
+function parseLocaleNumber(v) {
+  if (v == null) return null;
+  let raw = String(v).trim();
+  if (!raw) return null;
+  raw = raw.replace(/[^\d,.-]/g, "");
+  if (!raw) return null;
+
+  if (raw.includes(".") && raw.includes(",")) {
+    raw = raw.replace(/\./g, "").replace(",", ".");
+  } else {
+    raw = raw.replace(",", ".");
+  }
+  const n = parseFloat(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
 function loadDiskCache() {
   try {
     const raw = fs.readFileSync(CACHE_FILE, "utf8");
@@ -54,29 +70,19 @@ function mergeWithPrevious(current, previousItems) {
   });
 }
 
-function extractCommodity(html, labels) {
-  const flat = html.replace(/\s+/g, " ");
-  for (const label of labels) {
-    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    const patterns = [
-      new RegExp(`${escaped}[^\\d]{0,120}?(\\d{1,3}[\\.,]\\d{2,4})`, "i"),
-      new RegExp(`${escaped}[^\\d]{0,300}?(\\d{1,2}[\\.,]\\d{4})`, "i"),
-    ];
-    for (const re of patterns) {
-      const m = flat.match(re);
-      if (m?.[1]) {
-        let raw = m[1];
-        if (raw.includes(".") && raw.includes(",")) {
-          raw = raw.replace(/\./g, "").replace(",", ".");
-        } else {
-          raw = raw.replace(",", ".");
-        }
-        const n = parseFloat(raw);
-        if (Number.isFinite(n) && n > 0 && n < 1_000_000) return n;
-      }
-    }
-  }
-  return null;
+function extractSectionValue(html, sectionLabel) {
+  const escaped = sectionLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const sectionRegex = new RegExp(
+    `<h2>[^<]*${escaped}[^<]*<\\/h2>[\\s\\S]{0,8000}?<tbody>[\\s\\S]{0,5000}?<tr[^>]*>[\\s\\S]{0,1200}?<td[^>]*>[^<]*<\\/td>[\\s\\S]{0,1200}?<td[^>]*>([^<]+)<\\/td>(?:[\\s\\S]{0,1200}?<td[^>]*>([^<]+)<\\/td>)?`,
+    "i"
+  );
+  const match = html.match(sectionRegex);
+  if (!match) return { value: null, change: null };
+
+  return {
+    value: parseLocaleNumber(match[1]),
+    change: parseLocaleNumber(match[2] ?? null),
+  };
 }
 
 async function fetchUsdAwesome() {
@@ -147,30 +153,27 @@ async function buildPayload() {
     console.warn("cotacoes HTML:", e.message);
   }
 
-  const agro =
-    html.length > 500
-      ? [
-          {
-            name: "🌱 Soja",
-            value: extractCommodity(html, ["Soja", "soja"]),
-            change: null,
-          },
-          {
-            name: "🌽 Milho",
-            value: extractCommodity(html, ["Milho", "milho"]),
-            change: null,
-          },
-          {
-            name: "🍬 Açúcar",
-            value: extractCommodity(html, ["Açúcar", "Acucar", "açúcar"]),
-            change: null,
-          },
-        ]
-      : [
-          { name: "🌱 Soja", value: null, change: null },
-          { name: "🌽 Milho", value: null, change: null },
-          { name: "🍬 Açúcar", value: null, change: null },
-        ];
+  const soja = html.length > 500 ? extractSectionValue(html, "Soja") : null;
+  const milho = html.length > 500 ? extractSectionValue(html, "Milho") : null;
+  const acucar = html.length > 500 ? extractSectionValue(html, "Açúcar") : null;
+
+  const agro = [
+    {
+      name: "🌱 Soja",
+      value: soja?.value ?? null,
+      change: soja?.change ?? null,
+    },
+    {
+      name: "🌽 Milho",
+      value: milho?.value ?? null,
+      change: milho?.change ?? null,
+    },
+    {
+      name: "🍬 Açúcar",
+      value: acucar?.value ?? null,
+      change: acucar?.change ?? null,
+    },
+  ];
 
   let items = [usdItem, ...agro];
   items = mergeWithPrevious(items, previousItems);
