@@ -44,6 +44,7 @@ export function CalendarView({
   const [calendarMode, setCalendarMode] = useState<"month" | "week">("month");
   const [viewMonth, setViewMonth] = useState(today.getMonth());
   const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [icsPanelOpen, setIcsPanelOpen] = useState(false);
 
   const changeMonth = (offset: number) => {
     const newDate = new Date(viewYear, viewMonth + offset, 1);
@@ -79,7 +80,7 @@ export function CalendarView({
           </button>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto sm:flex-wrap sm:justify-end">
           {canReplicate && (
             <button
               type="button"
@@ -90,18 +91,32 @@ export function CalendarView({
               {loadingReplicate ? "Copiando..." : "🔁 Replicar mês"}
             </button>
           )}
+          {onSyncIcs && onIcsUrlChange ? (
+            <button
+              type="button"
+              onClick={() => setIcsPanelOpen((v) => !v)}
+              aria-expanded={icsPanelOpen}
+              className={`w-full sm:w-auto min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium border transition active:scale-[0.98] ${
+                icsPanelOpen
+                  ? "bg-teal-950/80 border-teal-500/50 text-teal-100"
+                  : "bg-zinc-900/70 border-zinc-700/80 text-zinc-200 hover:bg-zinc-800/90"
+              }`}
+            >
+              {icsPanelOpen ? "▼ Fechar importação ICS" : "🔗 Importar calendário (ICS)"}
+            </button>
+          ) : null}
         </div>
       </div>
 
-      {onSyncIcs && onIcsUrlChange ? (
-        <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-3 sm:p-4 space-y-2">
+      {onSyncIcs && onIcsUrlChange && icsPanelOpen ? (
+        <div className="rounded-xl border border-teal-900/50 bg-zinc-950/60 p-3 sm:p-4 space-y-3 animate-in fade-in duration-200">
           <div className="space-y-0.5">
             <p className="text-sm font-semibold text-zinc-100">
-              Sincronizar calendário (link ICS)
+              Link do calendário (.ics)
             </p>
             <p className="text-[11px] text-zinc-500 leading-relaxed">
-              Cole o link de assinatura (.ics) do Outlook ou Google. Não precisa
-              de cadastro no Azure — só o link público do calendário.
+              Cole o link de assinatura do Outlook ou Google. O endereço fica
+              salvo neste navegador.
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:items-stretch">
@@ -120,7 +135,7 @@ export function CalendarView({
               disabled={syncingIcs || !icsUrl.trim()}
               className="min-h-[44px] shrink-0 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-medium hover:bg-teal-500 disabled:opacity-50 active:scale-[0.98] transition"
             >
-              {syncingIcs ? "Importando..." : "↻ Sincronizar ICS"}
+              {syncingIcs ? "Importando..." : "↻ Sincronizar agora"}
             </button>
           </div>
         </div>
