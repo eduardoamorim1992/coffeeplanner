@@ -22,6 +22,10 @@ interface CalendarViewProps {
   canReplicate: boolean;
   syncingOutlook?: boolean;
   onSyncOutlook?: () => void;
+  icsUrl?: string;
+  onIcsUrlChange?: (value: string) => void;
+  syncingIcs?: boolean;
+  onSyncIcs?: () => void;
 }
 
 const today = new Date();
@@ -36,6 +40,10 @@ export function CalendarView({
   canReplicate,
   syncingOutlook = false,
   onSyncOutlook,
+  icsUrl = "",
+  onIcsUrlChange,
+  syncingIcs = false,
+  onSyncIcs,
 }: CalendarViewProps) {
   const [calendarMode, setCalendarMode] = useState<"month" | "week">("month");
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -99,6 +107,39 @@ export function CalendarView({
           )}
         </div>
       </div>
+
+      {onSyncIcs && onIcsUrlChange ? (
+        <div className="rounded-xl border border-zinc-800/80 bg-zinc-950/40 p-3 sm:p-4 space-y-2">
+          <div className="space-y-0.5">
+            <p className="text-sm font-semibold text-zinc-100">
+              Sincronizar calendário (link ICS)
+            </p>
+            <p className="text-[11px] text-zinc-500 leading-relaxed">
+              Cole o link de assinatura (.ics) do Outlook ou Google. Não precisa
+              de cadastro no Azure — só o link público do calendário.
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row gap-2 sm:items-stretch">
+            <input
+              type="url"
+              inputMode="url"
+              autoComplete="url"
+              placeholder="https://..."
+              value={icsUrl}
+              onChange={(e) => onIcsUrlChange(e.target.value)}
+              className="flex-1 min-h-[44px] px-3 py-2.5 rounded-xl bg-muted/30 border border-border text-sm"
+            />
+            <button
+              type="button"
+              onClick={onSyncIcs}
+              disabled={syncingIcs || !icsUrl.trim()}
+              className="min-h-[44px] shrink-0 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-medium hover:bg-teal-500 disabled:opacity-50 active:scale-[0.98] transition"
+            >
+              {syncingIcs ? "Importando..." : "↻ Sincronizar ICS"}
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       {calendarMode === "month" ? (
         <div className="flex flex-col lg:flex-row gap-4 lg:gap-5 w-full min-w-0 lg:items-start">

@@ -8,6 +8,11 @@ import { DashboardChart } from "@/components/DashboardChart";
 import { OKRPanel } from "@/components/OKRPanel";
 import { supabase } from "@/lib/supabase";
 import { fetchOutlookEvents } from "@/lib/outlookSync";
+import {
+  fetchIcsTextFromUrl,
+  filterEventsWithinDays,
+  parseIcsText,
+} from "@/lib/icsSync";
 import { useEffect, useRef, useState } from "react";
 
 // 🔥 FORMATAR DATA
@@ -86,6 +91,14 @@ export default function DivisionPage() {
   const [userName, setUserName] = useState("");
   const [loadingReplicate, setLoadingReplicate] = useState(false);
   const [syncingOutlook, setSyncingOutlook] = useState(false);
+  const [syncingIcs, setSyncingIcs] = useState(false);
+  const [icsUrl, setIcsUrl] = useState(() => {
+    try {
+      return localStorage.getItem("calendar-ics-subscription-url") || "";
+    } catch {
+      return "";
+    }
+  });
   const [me, setMe] = useState<any>(null);
   const notifiedTasksRef = useRef<Set<string>>(new Set());
 
@@ -166,6 +179,14 @@ export default function DivisionPage() {
   useEffect(() => {
     loadTasks();
   }, [userId]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("calendar-ics-subscription-url", icsUrl);
+    } catch {
+      /* private mode */
+    }
+  }, [icsUrl]);
 
   useEffect(() => {
     if (!("Notification" in window)) return;
@@ -397,6 +418,99 @@ export default function DivisionPage() {
     }
   }
 
+  async function syncIcsCalendar() {
+    if (!me?.id) {
+      alert("Usuário não identificado para sincronização.");
+      return;
+    }
+    if (userId && userId !== me.id) {
+      return;
+    }
+    const url = icsUrl.trim();
+    if (!url) {
+      alert("Cole o link ICS do calendário (assinatura / publicação).");
+      return;
+    }
+
+    setSyncingIcs(true);
+    try {
+      const raw = await fetchIcsTextFromUrl(url);
+      const parsed = parseIcsText(raw);
+      const upcoming = filterEventsWithinDays(parsed, 90);
+
+      if (upcoming.length === 0) {
+        alert(
+          "Nenhum evento encontrado no ICS para os próximos 90 dias (ou o arquivo não pôde ser lido)."
+        );
+        setSyncingIcs(false);
+        return;
+      }
+
+      const orderedDates = upcoming.map((e) => e.date).sort();
+      const rangeStart = orderedDates[0];
+      const rangeEnd = orderedDates[orderedDates.length - 1];
+
+      const { data: existingRows, error: existingError } = await supabase
+        .from("atividades")
+        .select("data, hora, titulo")
+        .eq("user_id", me.id)
+        .gte("data", rangeStart)
+        .lte("data", rangeEnd);
+
+      if (existingError) {
+        throw new Error("Não foi possível validar atividades existentes.");
+      }
+
+      const normalizeTitle = (v: string) => v.trim().toLowerCase();
+      const keyOf = (dateIso: string, time: string | null, title: string) =>
+        `${dateIso}|${time || ""}|${normalizeTitle(title)}`;
+
+      const existingKeys = new Set(
+        (existingRows || []).map((row: any) => keyOf(row.data, row.hora, row.titulo))
+      );
+      const insertKeys = new Set<string>();
+      const inserts: any[] = [];
+
+      for (const ev of upcoming) {
+        const displayTitle = `[ICS] ${ev.title}`;
+        const key = keyOf(ev.date, ev.time, displayTitle);
+        if (existingKeys.has(key) || insertKeys.has(key)) continue;
+        inserts.push({
+          user_id: me.id,
+          data: ev.date,
+          hora: ev.time,
+          titulo: displayTitle,
+          prioridade: "media",
+          completed: false,
+        });
+        insertKeys.add(key);
+      }
+
+      if (inserts.length > 0) {
+        const { error: insertError } = await supabase.from("atividades").insert(inserts);
+        if (insertError) {
+          throw new Error("Falha ao salvar eventos do calendário ICS.");
+        }
+      }
+
+      await loadTasks();
+      alert(
+        inserts.length > 0
+          ? `Importação ICS concluída. ${inserts.length} evento(s) novo(s).`
+          : "Nenhum evento novo para importar (já existiam no calendário)."
+      );
+    } catch (error: unknown) {
+      console.error("syncIcsCalendar:", error);
+      const msg =
+        error instanceof Error
+          ? error.message
+          : "Não foi possível importar o calendário ICS agora.";
+      alert(msg);
+    } finally {
+      setSyncingIcs(false);
+    }
+  }
+
   const tabActive = (active: boolean) =>
     active
       ? "bg-gradient-to-r from-primary to-red-500 text-white border-red-400/80 shadow-[0_10px_30px_-14px_rgba(239,68,68,0.75)] ring-1 ring-red-300/30"
@@ -456,6 +570,12 @@ export default function DivisionPage() {
                 canReplicate={!userId || userId === me?.id}
                 syncingOutlook={syncingOutlook}
                 onSyncOutlook={!userId || userId === me?.id ? syncOutlookCalendar : undefined}
+                icsUrl={icsUrl}
+                onIcsUrlChange={
+                  !userId || userId === me?.id ? setIcsUrl : undefined
+                }
+                syncingIcs={syncingIcs}
+                onSyncIcs={!userId || userId === me?.id ? syncIcsCalendar : undefined}
               />
             )}
 
