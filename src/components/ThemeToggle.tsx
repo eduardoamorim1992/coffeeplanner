@@ -8,7 +8,7 @@ export function ThemeToggle() {
   return (
     <button
       onClick={toggleTheme}
-      className="p-2 rounded-lg bg-muted hover:bg-primary/20 transition"
+      className="p-2 rounded-lg bg-muted text-foreground hover:bg-primary/15 hover:text-primary transition"
     >
       {theme === "dark" ? (
         <Sun size={18} />

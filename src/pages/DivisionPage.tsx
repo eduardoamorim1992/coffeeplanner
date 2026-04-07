@@ -119,6 +119,7 @@ export default function DivisionPage() {
 
     // 🔥 GESTOR
     else if (
+      role === "diretor" ||
       role === "coordenador" ||
       role === "supervisor" ||
       role === "gerente"
@@ -231,12 +232,23 @@ export default function DivisionPage() {
     return () => clearInterval(interval);
   }, [calendarData]);
 
-  // 🔥 REPLICAR (SOMENTE DO USUÁRIO LOGADO)
-  async function replicateMonth() {
-    const confirm = window.confirm(
-      "Deseja replicar suas atividades para todos os mesmos dias da semana no mês atual?"
+  // 🔥 REPLICAR: mês visível no calendário → mesmo dia da semana no mês SEGUINTE (SOMENTE USUÁRIO LOGADO)
+  async function replicateMonth(sourceYear: number, sourceMonthIndex: number) {
+    const targetStart = new Date(sourceYear, sourceMonthIndex + 1, 1);
+    const targetYear = targetStart.getFullYear();
+    const targetMonth = targetStart.getMonth();
+
+    const monthFmt = new Intl.DateTimeFormat("pt-BR", {
+      month: "long",
+      year: "numeric",
+    });
+    const sourceLabel = monthFmt.format(new Date(sourceYear, sourceMonthIndex, 1));
+    const targetLabel = monthFmt.format(new Date(targetYear, targetMonth, 1));
+
+    const ok = window.confirm(
+      `Replicar as atividades de ${sourceLabel} para os mesmos dias da semana em ${targetLabel}?`
     );
-    if (!confirm) return;
+    if (!ok) return;
 
     setLoadingReplicate(true);
 
@@ -245,15 +257,18 @@ export default function DivisionPage() {
       return;
     }
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
-    const lastDay = new Date(year, month + 1, 0).getDate();
+    const sourceLastDay = new Date(sourceYear, sourceMonthIndex + 1, 0).getDate();
+    const rangeStart = formatDateLocal(new Date(sourceYear, sourceMonthIndex, 1));
+    const rangeEnd = formatDateLocal(
+      new Date(sourceYear, sourceMonthIndex, sourceLastDay)
+    );
 
-    const rangeStart = formatDateLocal(new Date(year, month, 1));
-    const rangeEnd = formatDateLocal(new Date(year, month, lastDay));
+    const targetLastDay = new Date(targetYear, targetMonth + 1, 0).getDate();
+    const targetRangeStart = formatDateLocal(new Date(targetYear, targetMonth, 1));
+    const targetRangeEnd = formatDateLocal(
+      new Date(targetYear, targetMonth, targetLastDay)
+    );
 
-    // Busca apenas o que está no mês atual para evitar inserir em meses diferentes.
     const { data: sourceTasks, error: sourceError } = await supabase
       .from("atividades")
       .select("*")
@@ -271,8 +286,8 @@ export default function DivisionPage() {
       .from("atividades")
       .select("data, hora, titulo")
       .eq("user_id", me.id)
-      .gte("data", rangeStart)
-      .lte("data", rangeEnd);
+      .gte("data", targetRangeStart)
+      .lte("data", targetRangeEnd);
 
     if (existingError) {
       console.error("Erro ao buscar atividades existentes:", existingError);
@@ -283,7 +298,6 @@ export default function DivisionPage() {
     const keyOf = (dataIso: string, hora: any, titulo: any) =>
       `${dataIso}|${hora ?? ""}|${titulo ?? ""}`;
 
-    // Evita duplicar no dia original e também em datas já existentes.
     const existingKeys = new Set(
       (existingTasks || []).map((t: any) =>
         keyOf(t.data, t.hora, t.titulo)
@@ -297,8 +311,8 @@ export default function DivisionPage() {
       const original = parseLocalDate(task.data);
       const weekday = original.getDay();
 
-      for (let d = 1; d <= lastDay; d++) {
-        const date = new Date(year, month, d);
+      for (let d = 1; d <= targetLastDay; d++) {
+        const date = new Date(targetYear, targetMonth, d);
         if (date.getDay() !== weekday) continue;
 
         const targetIso = formatDateLocal(date);
@@ -428,8 +442,8 @@ export default function DivisionPage() {
 
   const tabActive = (active: boolean) =>
     active
-      ? "bg-gradient-to-r from-primary to-red-500 text-white border-red-400/80 shadow-[0_10px_30px_-14px_rgba(239,68,68,0.75)] ring-1 ring-red-300/30"
-      : "bg-zinc-900/70 backdrop-blur-sm border-zinc-700/80 text-zinc-200 hover:bg-zinc-800/80 hover:border-zinc-500/80";
+      ? "border-primary/30 bg-gradient-to-r from-primary to-red-500 text-primary-foreground shadow-md ring-1 ring-primary/20 dark:border-red-400/80 dark:shadow-[0_10px_30px_-14px_rgba(239,68,68,0.75)] dark:ring-red-300/30"
+      : "border-border bg-card/90 text-foreground backdrop-blur-sm hover:border-primary/20 hover:bg-muted/80 dark:border-zinc-700/80 dark:bg-zinc-900/70 dark:text-zinc-200 dark:hover:border-zinc-500/80 dark:hover:bg-zinc-800/80";
 
   const tabDesktop = (active: boolean) =>
     `px-5 py-2.5 rounded-2xl border text-sm font-semibold tracking-[0.01em] transition-all duration-200 active:scale-[0.98] ${tabActive(active)}`;
@@ -449,7 +463,7 @@ export default function DivisionPage() {
           <MotivationalBar />
 
           {/* Abas no desktop / tablet */}
-          <div className="hidden md:flex flex-wrap gap-3 rounded-2xl border border-zinc-800/80 bg-zinc-950/60 p-2 backdrop-blur-sm">
+          <div className="hidden md:flex flex-wrap gap-3 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-none">
             <button
               type="button"
               onClick={() => setView("calendar")}
@@ -496,7 +510,12 @@ export default function DivisionPage() {
               <DashboardChart calendarData={calendarData} />
             )}
 
-            {view === "okr" && <OKRPanel />}
+            {view === "okr" && (
+              <OKRPanel
+                viewedUserId={userId}
+                viewedUserName={userName}
+              />
+            )}
           </section>
         </main>
 

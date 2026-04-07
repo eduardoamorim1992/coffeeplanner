@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import {
@@ -8,6 +8,7 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Settings,
   User,
   KeyRound,
@@ -17,6 +18,7 @@ import {
 // Hierarquia de cargos — cima = maior nível, baixo = menor nível
 const ROLE_HIERARCHY = [
   "admin",
+  "diretor",
   "gerente",
   "supervisor",
   "coordenador",
@@ -37,6 +39,51 @@ function sortUsersByHierarchy<T extends { nome?: string; role?: string }>(
     if (posA !== posB) return posA - posB;
     return (a.nome || "").localeCompare(b.nome || "");
   });
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  admin: "Administradores",
+  diretor: "Diretores",
+  gerente: "Gerentes",
+  supervisor: "Supervisores",
+  coordenador: "Coordenadores",
+  analista: "Analistas",
+  assistente: "Assistentes",
+  outros: "Outros",
+};
+
+function groupUsersByRole<T extends { nome?: string; role?: string }>(
+  list: T[]
+): { roleKey: string; label: string; items: T[] }[] {
+  const sorted = sortUsersByHierarchy(list);
+  const map = new Map<string, T[]>();
+
+  for (const u of sorted) {
+    const raw = String(u.role || "").toLowerCase().trim();
+    const key = ROLE_HIERARCHY.includes(raw) ? raw : "outros";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(u);
+  }
+
+  const out: { roleKey: string; label: string; items: T[] }[] = [];
+  for (const role of ROLE_HIERARCHY) {
+    const items = map.get(role);
+    if (items?.length)
+      out.push({
+        roleKey: role,
+        label: ROLE_LABELS[role] || role,
+        items,
+      });
+  }
+  const outrosItems = map.get("outros");
+  if (outrosItems?.length) {
+    out.push({
+      roleKey: "outros",
+      label: ROLE_LABELS.outros,
+      items: outrosItems,
+    });
+  }
+  return out;
 }
 
 // 🔥 HOOK AUTH
@@ -72,6 +119,22 @@ export default function AppSidebar() {
   const [pendingTotals, setPendingTotals] = useState<Record<string, number>>({});
   const [me, setMe] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+
+  const userGroups = useMemo(() => groupUsersByRole(users), [users]);
+
+  useEffect(() => {
+    setOpenGroups((prev) => {
+      const next = { ...prev };
+      userGroups.forEach((g) => {
+        if (next[g.roleKey] === undefined) next[g.roleKey] = false;
+      });
+      Object.keys(next).forEach((k) => {
+        if (!userGroups.some((g) => g.roleKey === k)) delete next[k];
+      });
+      return next;
+    });
+  }, [userGroups]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -106,6 +169,7 @@ export default function AppSidebar() {
 
     // 🔥 GESTOR → EQUIPE
     else if (
+      role === "diretor" ||
       role === "coordenador" ||
       role === "supervisor" ||
       role === "gerente"
@@ -171,13 +235,13 @@ export default function AppSidebar() {
         type="button"
         aria-label="Abrir menu"
         onClick={() => setIsMobileOpen(true)}
-        className="md:hidden fixed z-50 touch-target rounded-xl bg-zinc-900/95 border border-zinc-700 shadow-lg backdrop-blur-sm"
+        className="md:hidden fixed z-50 touch-target rounded-xl border border-border bg-card text-foreground shadow-md backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/95 dark:shadow-lg"
         style={{
           top: "max(0.75rem, env(safe-area-inset-top, 0px))",
           left: "max(0.75rem, env(safe-area-inset-left, 0px))",
         }}
       >
-        <Menu size={22} className="text-white" />
+        <Menu size={22} className="text-foreground dark:text-white" />
       </button>
 
       {isMobileOpen && (
@@ -191,11 +255,12 @@ export default function AppSidebar() {
         className={`
           ${collapsed ? "w-20" : "w-[min(100vw-3rem,18rem)] sm:w-64"}
           fixed md:relative
-          h-full max-h-[100dvh]
-          bg-zinc-950
-          border-r border-zinc-800
+          h-full max-h-[100dvh] min-h-0
+          bg-sidebar
+          border-r border-sidebar-border
+          text-sidebar-foreground
           transition-all duration-300 ease-out
-          flex flex-col justify-between
+          flex flex-col
           z-50 md:z-auto
           shadow-2xl md:shadow-none
           ${
@@ -205,94 +270,178 @@ export default function AppSidebar() {
           }
         `}
       >
-        <div>
-          <div className="p-4 flex items-center justify-between border-b border-zinc-800">
-            {!collapsed && (
-              <span className="text-white font-bold text-lg">
-                Usuários
-              </span>
-            )}
+        <div className="shrink-0 p-4 flex items-center justify-between border-b border-sidebar-border">
+          {!collapsed && (
+            <span className="text-lg font-bold text-sidebar-foreground">Usuários</span>
+          )}
 
-            <button
-              onClick={() => setCollapsed(!collapsed)}
-              className="hidden md:block text-zinc-400 hover:text-white"
-            >
-              {collapsed ? <ChevronRight /> : <ChevronLeft />}
-            </button>
+          <button
+            onClick={() => setCollapsed(!collapsed)}
+            className="hidden md:block text-muted-foreground hover:text-sidebar-foreground"
+          >
+            {collapsed ? <ChevronRight /> : <ChevronLeft />}
+          </button>
 
-            <button onClick={() => setIsMobileOpen(false)} className="md:hidden">
-              <X />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setIsMobileOpen(false)}
+            className="md:hidden rounded-lg p-1 text-sidebar-foreground hover:bg-sidebar-accent"
+            aria-label="Fechar menu"
+          >
+            <X size={22} />
+          </button>
+        </div>
 
-          <div className="p-2 space-y-2 flex-1 overflow-y-auto min-h-0 overscroll-contain pb-safe md:pb-2">
-            {/* DASHBOARD */}
+        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain p-2 pb-2 space-y-2 [scrollbar-gutter:stable]">
+          {/* DASHBOARD */}
             {(me?.role === "admin" ||
-              ["coordenador", "supervisor", "gerente"].includes(
+              ["diretor", "coordenador", "supervisor", "gerente"].includes(
                 String(me?.role || "").toLowerCase().trim()
               )) && (
-              <button
-                type="button"
-                onClick={() => {
-                  navigate("/dashboard");
-                  setIsMobileOpen(false);
-                }}
-                className={`flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm active:bg-zinc-800/80 ${
-                  location.pathname === "/dashboard"
-                    ? "bg-red-600 text-white"
-                    : "text-zinc-400 hover:bg-zinc-800"
-                }`}
-              >
-                <LayoutDashboard size={18} />
-                {!collapsed && "Dashboard"}
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                navigate("/dashboard");
+                setIsMobileOpen(false);
+              }}
+              className={`flex shrink-0 min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm active:bg-sidebar-accent/80 ${
+                location.pathname === "/dashboard"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              }`}
+            >
+              <LayoutDashboard size={18} />
+              {!collapsed && "Dashboard"}
+            </button>
+          )}
 
-            {/* USUÁRIOS — ordenados por hierarquia */}
-            {sortUsersByHierarchy(users).map((u) => {
-              const pending = pendingTotals[u.id] || 0;
-              const isActive = location.pathname === `/user/${u.id}`;
-
-              return (
-                <button
-                  type="button"
-                  key={u.id}
-                  onClick={() => {
-                    navigate(`/user/${u.id}`);
-                    setIsMobileOpen(false);
-                  }}
-                  className={`flex items-center justify-between w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm active:bg-zinc-800/80 ${
-                    isActive
-                      ? "bg-red-600 text-white"
-                      : "text-zinc-400 hover:bg-zinc-800"
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
+          {/* USUÁRIOS — lista simples quando colapsado; agrupado quando expandido */}
+          {collapsed
+            ? sortUsersByHierarchy(users).map((u) => {
+                const pending = pendingTotals[u.id] || 0;
+                const isActive = location.pathname === `/user/${u.id}`;
+                return (
+                  <button
+                    type="button"
+                    key={u.id}
+                    onClick={() => {
+                      navigate(`/user/${u.id}`);
+                      setIsMobileOpen(false);
+                    }}
+                    className={`flex min-h-[44px] w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm active:bg-sidebar-accent/80 ${
+                      isActive
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                    }`}
+                    title={u.nome}
+                  >
                     <User size={18} />
+                    {pending > 0 && (
+                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground dark:bg-zinc-700 dark:text-white">
+                        {pending}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            : userGroups.map((group) => {
+                const isOpen = openGroups[group.roleKey] === true;
+                const groupPending = group.items.reduce(
+                  (sum, u) => sum + (pendingTotals[u.id] || 0),
+                  0
+                );
 
-                    {!collapsed && (
-                      <div>
-                        <div>{u.nome}</div>
-                        <div className="text-xs text-zinc-500">
-                          {u.role}
-                        </div>
+                return (
+                  <div
+                    key={group.roleKey}
+                    className="rounded-lg border border-sidebar-border/90 bg-sidebar-accent/35 dark:border-zinc-800/80 dark:bg-zinc-900/30"
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setOpenGroups((p) => ({
+                          ...p,
+                          [group.roleKey]: !isOpen,
+                        }))
+                      }
+                      className="flex min-h-[40px] w-full items-center justify-between rounded-lg px-2 py-2 text-left text-xs font-semibold uppercase tracking-wide text-muted-foreground hover:bg-sidebar-accent/80 dark:text-zinc-400 dark:hover:bg-zinc-800/60"
+                    >
+                      <span className="truncate pr-1">{group.label}</span>
+                      <span className="flex shrink-0 items-center gap-1.5">
+                        {groupPending > 0 && (
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground dark:bg-zinc-700 dark:text-zinc-200">
+                            {groupPending}
+                          </span>
+                        )}
+                        <ChevronDown
+                          size={16}
+                          className={`text-muted-foreground transition-transform dark:text-zinc-500 ${
+                            isOpen ? "rotate-0" : "-rotate-90"
+                          }`}
+                        />
+                      </span>
+                    </button>
+
+                    {isOpen && (
+                      <div className="px-1 pb-1.5 space-y-0.5">
+                        {group.items.map((u) => {
+                          const pending = pendingTotals[u.id] || 0;
+                          const isActive =
+                            location.pathname === `/user/${u.id}`;
+
+                          return (
+                            <button
+                              type="button"
+                              key={u.id}
+                              onClick={() => {
+                                navigate(`/user/${u.id}`);
+                                setIsMobileOpen(false);
+                              }}
+                              className={`flex min-h-[44px] w-full items-center justify-between rounded-lg px-2 py-2 text-sm active:bg-sidebar-accent/80 ${
+                                isActive
+                                  ? "bg-primary text-primary-foreground"
+                                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                <User size={18} className="shrink-0" />
+                                <div className="min-w-0 text-left">
+                                  <div className="truncate">{u.nome}</div>
+                                  <div
+                                    className={`truncate text-xs capitalize ${
+                                      isActive
+                                        ? "text-primary-foreground/90 dark:text-red-100/80"
+                                        : "text-muted-foreground dark:text-zinc-500"
+                                    }`}
+                                  >
+                                    {u.role}
+                                  </div>
+                                </div>
+                              </div>
+
+                              {pending > 0 && (
+                                <span
+                                  className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${
+                                    isActive
+                                      ? "bg-primary-foreground/20 text-primary-foreground dark:bg-red-500/90 dark:text-white"
+                                      : "bg-muted text-muted-foreground dark:bg-zinc-700 dark:text-white"
+                                  }`}
+                                >
+                                  {pending}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
-
-                  {!collapsed && pending > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-zinc-700 text-white">
-                      {pending}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+                );
+              })}
         </div>
 
         {/* 🔥 FOOTER COM CONFIGURAÇÕES */}
-        <div className="p-2 border-t border-zinc-800 space-y-2 pb-safe md:pb-2 shrink-0">
+        <div className="shrink-0 space-y-2 border-t border-sidebar-border bg-sidebar p-2 pb-safe md:pb-2">
           {me?.role === "admin" && (
             <>
               <button
@@ -301,7 +450,7 @@ export default function AppSidebar() {
                   navigate("/admin/users");
                   setIsMobileOpen(false);
                 }}
-                className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 active:bg-zinc-800/80"
+                className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent active:bg-sidebar-accent/80"
               >
                 <Settings size={18} />
                 {!collapsed && "Gerenciar Usuários"}
@@ -313,7 +462,7 @@ export default function AppSidebar() {
                   setIsMobileOpen(false);
                 }}
                 title="Ver datas de cadastro — monitorar pagamento a cada 30 dias"
-                className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-amber-400/90 hover:bg-amber-500/10 hover:text-amber-300 border border-amber-500/30"
+                className="flex min-h-[44px] w-full items-center gap-3 rounded-lg border border-amber-300/80 px-3 py-2.5 text-sm text-amber-800 hover:bg-amber-100/80 hover:text-amber-950 dark:border-amber-500/30 dark:text-amber-400/90 dark:hover:bg-amber-500/10 dark:hover:text-amber-300"
               >
                 <CalendarCheck size={18} />
                 {!collapsed && "Datas de cadastro"}
@@ -327,7 +476,7 @@ export default function AppSidebar() {
               navigate("/alterar-senha");
               setIsMobileOpen(false);
             }}
-            className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 active:bg-zinc-800/80"
+            className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent active:bg-sidebar-accent/80"
           >
             <KeyRound size={18} />
             {!collapsed && "Alterar senha"}
@@ -339,7 +488,7 @@ export default function AppSidebar() {
               setIsMobileOpen(false);
               handleLogout();
             }}
-            className="flex items-center gap-3 w-full min-h-[44px] px-3 py-2.5 rounded-lg text-sm text-zinc-400 hover:bg-zinc-800 active:bg-zinc-800/80"
+            className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent active:bg-sidebar-accent/80"
           >
             <LogOut size={18} />
             {!collapsed && "Sair"}
@@ -444,24 +593,24 @@ function PaymentDatesModal({
         aria-hidden
       />
       <div
-        className="relative w-full max-w-lg max-h-[85vh] flex flex-col rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl"
+        className="relative flex max-h-[85vh] w-full max-w-lg flex-col rounded-xl border border-border bg-card text-card-foreground shadow-2xl dark:border-zinc-700 dark:bg-zinc-900"
         role="dialog"
         aria-label="Datas de cadastro para monitoramento de pagamento"
       >
-        <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-zinc-700">
-          <h3 className="text-lg font-semibold text-white">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-4 py-3 dark:border-zinc-700">
+          <h3 className="text-lg font-semibold text-foreground dark:text-white">
             Datas de cadastro
           </h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-zinc-400 hover:text-white p-1"
+            className="p-1 text-muted-foreground hover:text-foreground dark:text-zinc-400 dark:hover:text-white"
             aria-label="Fechar"
           >
             <X size={20} />
           </button>
         </div>
-        <p className="px-4 pt-2 text-xs text-zinc-500 shrink-0">
+        <p className="shrink-0 px-4 pt-2 text-xs text-muted-foreground">
           Ciclo de pagamento a cada 30 dias
         </p>
         <div className="flex-1 min-h-0 overflow-y-auto p-4 space-y-3">
@@ -474,20 +623,20 @@ function PaymentDatesModal({
             return (
               <div
                 key={u.id}
-                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-3 border-b border-zinc-800 last:border-0"
+                className="flex flex-col gap-3 border-b border-border py-3 last:border-0 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-800"
               >
                 <div>
-                  <div className="font-medium text-zinc-100">{u.nome}</div>
-                  <div className="text-xs text-zinc-500 capitalize">{u.role}</div>
-                  <div className="text-xs text-zinc-400 mt-0.5">
-                    Cadastro: <span className="text-zinc-200">{cadastro}</span>
+                  <div className="font-medium text-foreground dark:text-zinc-100">{u.nome}</div>
+                  <div className="text-xs capitalize text-muted-foreground dark:text-zinc-500">{u.role}</div>
+                  <div className="mt-0.5 text-xs text-muted-foreground">
+                    Cadastro: <span className="text-foreground dark:text-zinc-200">{cadastro}</span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 shrink-0">
+                <div className="flex shrink-0 items-center gap-3">
                   <div className="text-right">
                     <div
                       className={`text-sm font-medium ${
-                        vencido ? "text-red-500" : "text-emerald-400/90"
+                        vencido ? "text-red-600 dark:text-red-500" : "text-emerald-700 dark:text-emerald-400/90"
                       }`}
                     >
                       {vencido ? "Vencido" : `Próximo: ${proximoStr}`}

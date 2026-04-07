@@ -55,15 +55,15 @@ export function WeekCard({
       : 0;
 
   const priorityColors = {
-    alta: "text-red-500",
-    media: "text-blue-500",
-    baixa: "text-gray-400",
+    alta: "text-red-700 dark:text-red-500",
+    media: "text-sky-700 dark:text-blue-500",
+    baixa: "text-slate-500 dark:text-gray-400",
   };
 
   const priorityBackground = {
-    alta: "bg-red-500/10",
-    media: "bg-blue-500/10",
-    baixa: "bg-gray-500/10",
+    alta: "bg-red-100/80 dark:bg-red-500/10",
+    media: "bg-sky-100/75 dark:bg-blue-500/10",
+    baixa: "bg-slate-100/90 dark:bg-gray-500/10",
   };
 
   return (
@@ -98,7 +98,7 @@ export function WeekCard({
         <div className="px-4 pt-1">
           <div className="w-full h-1 bg-muted/40 rounded overflow-hidden">
             <div
-              className="h-full bg-green-500 transition-all duration-500"
+              className="h-full bg-emerald-600 transition-all duration-500 dark:bg-green-500"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -115,7 +115,7 @@ export function WeekCard({
             className={`flex items-start justify-between group rounded px-2 py-0.5 transition
             ${
               task.completed
-                ? "bg-green-500/20"
+                ? "bg-emerald-100/85 dark:bg-green-500/20"
                 : priorityBackground[task.priority]
             }`}
           >
@@ -130,7 +130,7 @@ export function WeekCard({
               >
 
                 {task.completed ? (
-                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-green-500 mt-[1px]" />
+                  <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0 text-emerald-700 dark:text-green-500 mt-[1px]" />
                 ) : (
                   <Circle
                     className={`w-3.5 h-3.5 flex-shrink-0 mt-[1px] ${priorityColors[task.priority]}`}
@@ -175,7 +175,7 @@ export function WeekCard({
                 onClick={() =>
                   onReplicateTask(task)
                 }
-                title="Replicar no mês"
+                title="Replicar nos dias da semana escolhidos"
               >
                 <Repeat className="w-3 h-3 text-blue-400 hover:text-blue-300" />
               </button>

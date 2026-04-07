@@ -49,6 +49,7 @@ export default function Admin() {
         <option value="engenheiro">Engenheiro</option>
         <option value="supervisor">Supervisor</option>
         <option value="gerente">Gerente</option>
+        <option value="diretor">Diretor</option>
         <option value="coordenador">Coordenador</option>
       </select>
 

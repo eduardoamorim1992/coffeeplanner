@@ -8,6 +8,7 @@ const ROLES = [
   "coordenador",
   "supervisor",
   "gerente",
+  "diretor",
   "admin",
 ];
 
@@ -351,6 +352,7 @@ export default function AdminUsers() {
                   {users
                     .filter(
                       (x) =>
+                        x.role === "diretor" ||
                         x.role === "coordenador" ||
                         x.role === "supervisor" ||
                         x.role === "gerente"

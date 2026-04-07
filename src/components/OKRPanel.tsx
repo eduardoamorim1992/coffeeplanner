@@ -33,20 +33,37 @@ function isTargetOverdue(iso: string | null, completed: boolean): boolean {
   return target < today;
 }
 
-export function OKRPanel() {
+type OKRPanelProps = {
+  /** ID do usuário da página (rota /user/:userId). Se omitido, usa o usuário logado. */
+  viewedUserId?: string;
+  /** Nome para texto de “visualização” quando não pode editar */
+  viewedUserName?: string;
+};
+
+export function OKRPanel({ viewedUserId, viewedUserName }: OKRPanelProps = {}) {
   const [objective, setObjective] = useState("");
   const [targetDateInput, setTargetDateInput] = useState("");
   const [keyResults, setKeyResults] = useState<string[]>([""]);
   const [okrs, setOkrs] = useState<OKRItem[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  /** Dono dos OKRs na UI — sempre o id da tabela `users` (igual à rota /user/:id) */
+  const [okrOwnerProfileId, setOkrOwnerProfileId] = useState<string | null>(
+    null
+  );
+  /** Perfil do visitante (users.id), não confundir com auth.uid() se divergirem */
+  const [viewerProfileId, setViewerProfileId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toggleBusyId, setToggleBusyId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
 
+  const canEdit =
+    Boolean(viewerProfileId) &&
+    Boolean(okrOwnerProfileId) &&
+    viewerProfileId === okrOwnerProfileId;
+
   useEffect(() => {
     loadOKRs();
-  }, []);
+  }, [viewedUserId]);
 
   async function loadOKRs() {
     setLoading(true);
@@ -63,14 +80,32 @@ export function OKRPanel() {
       return;
     }
 
-    // Usar o id do Auth diretamente evita depender da tabela `users`
-    // (e possíveis bloqueios/ RLS nela).
-    setUserId(user.id);
+    let myProfileId = user.id;
+    if (user.email) {
+      const { data: myRow } = await supabase
+        .from("users")
+        .select("id")
+        .eq("email", user.email)
+        .maybeSingle();
+      if (myRow?.id) myProfileId = myRow.id;
+    }
+    setViewerProfileId(myProfileId);
+
+    const ownerProfileId = viewedUserId?.trim() || myProfileId;
+    setOkrOwnerProfileId(ownerProfileId);
+
+    const userIdCandidates = Array.from(
+      new Set(
+        ownerProfileId === myProfileId
+          ? [ownerProfileId, user.id]
+          : [ownerProfileId]
+      )
+    );
 
     const { data, error } = await supabase
       .from("okrs")
       .select("id, objective, key_results, created_at, completed, target_date")
-      .eq("user_id", user.id)
+      .in("user_id", userIdCandidates)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -118,7 +153,7 @@ export function OKRPanel() {
       return;
     }
 
-    if (!userId) {
+    if (!okrOwnerProfileId || !canEdit) {
       setMessage("Usuário não identificado para salvar OKR.");
       return;
     }
@@ -131,7 +166,7 @@ export function OKRPanel() {
     const { data, error } = await supabase
       .from("okrs")
       .insert({
-        user_id: userId,
+        user_id: okrOwnerProfileId,
         objective: cleanObjective,
         key_results: cleanKeyResults,
         completed: false,
@@ -216,11 +251,28 @@ export function OKRPanel() {
   return (
     <div className="space-y-4 transition-all duration-300">
       {message ? (
-        <div className="rounded border border-red-700 bg-red-950/40 px-3 py-2 text-sm text-red-300">
+        <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
           {message}
         </div>
       ) : null}
 
+      {!loading &&
+      viewerProfileId &&
+      okrOwnerProfileId &&
+      viewerProfileId !== okrOwnerProfileId ? (
+        <div className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground dark:border-zinc-700/80 dark:bg-zinc-900/50 dark:text-zinc-400">
+          Visualização dos OKRs
+          {viewedUserName ? (
+            <>
+              {" "}
+              de <span className="font-medium text-foreground dark:text-zinc-200">{viewedUserName}</span>
+            </>
+          ) : null}
+          . Apenas o próprio usuário pode criar ou alterar OKRs aqui.
+        </div>
+      ) : null}
+
+      {canEdit ? (
       <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3">
         <h3 className="text-base sm:text-lg font-semibold">🎯 Planejamento de OKRs</h3>
 
@@ -285,6 +337,7 @@ export function OKRPanel() {
           </button>
         </div>
       </div>
+      ) : null}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-2 md:pb-0">
         {loading && (
@@ -292,6 +345,13 @@ export function OKRPanel() {
             Carregando OKRs...
           </div>
         )}
+
+        {!loading && okrs.length === 0 ? (
+          <div className="text-sm text-muted-foreground lg:col-span-2">
+            Nenhum OKR cadastrado
+            {viewedUserName && !canEdit ? ` para ${viewedUserName}` : ""}.
+          </div>
+        ) : null}
 
         {okrs.map((okr) => (
           <div
@@ -339,13 +399,15 @@ export function OKRPanel() {
                   </p>
                 ) : null}
               </div>
-              <button
-                type="button"
-                onClick={() => removeOKR(okr.id)}
-                className="min-h-[36px] min-w-[36px] shrink-0 text-xs text-red-400 hover:text-red-300 px-2 rounded-lg active:bg-red-500/10"
-              >
-                Excluir
-              </button>
+              {canEdit ? (
+                <button
+                  type="button"
+                  onClick={() => removeOKR(okr.id)}
+                  className="min-h-[36px] min-w-[36px] shrink-0 text-xs text-red-400 hover:text-red-300 px-2 rounded-lg active:bg-red-500/10"
+                >
+                  Excluir
+                </button>
+              ) : null}
             </div>
 
             <ul
@@ -358,27 +420,29 @@ export function OKRPanel() {
               ))}
             </ul>
 
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {!okr.completed ? (
-                <button
-                  type="button"
-                  disabled={toggleBusyId === okr.id}
-                  onClick={() => setOKRCompleted(okr.id, true)}
-                  className="min-h-[40px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-sm shadow-emerald-900/40 disabled:opacity-60 active:scale-[0.98] transition"
-                >
-                  {toggleBusyId === okr.id ? "Salvando..." : "OKR concluído"}
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  disabled={toggleBusyId === okr.id}
-                  onClick={() => setOKRCompleted(okr.id, false)}
-                  className="min-h-[40px] px-4 py-2 rounded-xl border border-emerald-500/50 bg-emerald-950/40 text-emerald-200 text-sm font-medium hover:bg-emerald-900/50 disabled:opacity-60 active:scale-[0.98] transition"
-                >
-                  {toggleBusyId === okr.id ? "Salvando..." : "Reabrir OKR"}
-                </button>
-              )}
-            </div>
+            {canEdit ? (
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                {!okr.completed ? (
+                  <button
+                    type="button"
+                    disabled={toggleBusyId === okr.id}
+                    onClick={() => setOKRCompleted(okr.id, true)}
+                    className="min-h-[40px] px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold shadow-sm shadow-emerald-900/40 disabled:opacity-60 active:scale-[0.98] transition"
+                  >
+                    {toggleBusyId === okr.id ? "Salvando..." : "OKR concluído"}
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={toggleBusyId === okr.id}
+                    onClick={() => setOKRCompleted(okr.id, false)}
+                    className="min-h-[40px] px-4 py-2 rounded-xl border border-emerald-500/50 bg-emerald-950/40 text-emerald-200 text-sm font-medium hover:bg-emerald-900/50 disabled:opacity-60 active:scale-[0.98] transition"
+                  >
+                    {toggleBusyId === okr.id ? "Salvando..." : "Reabrir OKR"}
+                  </button>
+                )}
+              </div>
+            ) : null}
           </div>
         ))}
       </div>

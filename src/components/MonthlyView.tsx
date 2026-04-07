@@ -184,7 +184,7 @@ export function MonthlyView({
                 ${status === "done" && "bg-green-500/20 border-green-500"}
                 ${status === "pending" && high > 0 && "bg-red-500/10 border-red-500"}
                 ${status === "mixed" && "bg-yellow-500/10 border-yellow-500"}
-                ${status === "empty" && !isSelected && "border-zinc-700/80 bg-zinc-900/20"}
+                ${status === "empty" && !isSelected && "border-border bg-muted/25 dark:border-zinc-700/80 dark:bg-zinc-900/20"}
 
                 ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background z-10" : ""}
 
@@ -231,13 +231,13 @@ export function MonthlyView({
                 </div>
 
                 {high > 0 && (
-                  <div className="hidden sm:block text-[10px] text-red-400 font-semibold leading-tight">
+                  <div className="hidden text-[10px] font-semibold leading-tight text-red-700 dark:text-red-400 sm:block">
                     Alta prioridade
                   </div>
                 )}
 
                 {status === "done" && (
-                  <div className="text-[9px] sm:text-[10px] text-green-400 font-semibold leading-tight">
+                  <div className="text-[9px] font-semibold leading-tight text-emerald-700 dark:text-green-400 sm:text-[10px]">
                     ✔ Ok
                   </div>
                 )}
@@ -305,39 +305,32 @@ function DayTooltip({
 
   return (
     <div
-      className="fixed hidden md:flex flex-col min-w-[280px] max-w-[350px] w-[320px] max-h-[250px] rounded-xl animate-fade-in"
-      style={{
-        ...positionStyle,
-        zIndex: 99999,
-        backgroundColor: "#0a0a0b",
-        border: "1px solid rgba(113, 113, 122, 0.4)",
-        boxShadow:
-          "0 0 0 1px rgba(255,255,255,0.04), 0 4px 6px -2px rgba(0,0,0,0.4), 0 20px 40px -15px rgba(0,0,0,0.8), 0 0 80px -20px rgba(0,0,0,0.6)",
-      }}
+      className="fixed z-[99999] hidden min-h-0 w-[320px] min-w-[280px] max-h-[250px] max-w-[350px] flex-col overflow-hidden rounded-xl border border-border bg-card text-card-foreground shadow-lg animate-fade-in dark:border-zinc-600/50 dark:bg-[#0a0a0b] dark:shadow-[0_20px_50px_-15px_rgba(0,0,0,0.85)] md:flex"
+      style={positionStyle}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
     >
-      <div className="shrink-0 px-4 pt-4 pb-2 border-b border-zinc-700/80">
-        <span className="text-[11px] text-zinc-400 leading-relaxed">
+      <div className="shrink-0 border-b border-border px-4 pb-2 pt-4 dark:border-zinc-700/80">
+        <span className="text-[11px] leading-relaxed text-muted-foreground">
           {completed}/{tasks.length} concluídas
         </span>
       </div>
-      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 py-3 space-y-2">
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-4 py-3">
         {pendingTasks.map((t) => (
           <div
             key={t.id}
-            className="text-[11px] text-zinc-200 leading-relaxed break-words"
+            className="break-words text-[11px] leading-relaxed text-foreground dark:text-zinc-200"
           >
-            • {t.time ? <span className="text-zinc-500 font-mono mr-1.5">{t.time}</span> : ""}
+            • {t.time ? <span className="mr-1.5 font-mono text-muted-foreground">{t.time}</span> : ""}
             {t.title}
           </div>
         ))}
         {completedTasks.map((t) => (
           <div
             key={t.id}
-            className="text-[11px] text-zinc-500 line-through leading-relaxed break-words"
+            className="break-words text-[11px] leading-relaxed text-muted-foreground line-through dark:text-zinc-500"
           >
-            • {t.time ? <span className="text-zinc-600 font-mono mr-1.5">{t.time}</span> : ""}
+            • {t.time ? <span className="mr-1.5 font-mono text-muted-foreground/80 dark:text-zinc-600">{t.time}</span> : ""}
             {t.title}
           </div>
         ))}

@@ -24,7 +24,12 @@ import {
   Users,
 } from "lucide-react";
 
-const MANAGER_ROLES = ["coordenador", "supervisor", "gerente"] as const;
+const MANAGER_ROLES = [
+  "diretor",
+  "coordenador",
+  "supervisor",
+  "gerente",
+] as const;
 
 /** YYYY-MM-DD no fuso local */
 function formatDateLocal(date: Date): string {

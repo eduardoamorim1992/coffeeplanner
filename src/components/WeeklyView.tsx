@@ -1,6 +1,7 @@
 import { WeekCard } from "./WeekCard";
+import { ReplicateTaskDialog } from "./ReplicateTaskDialog";
 import { supabase } from "@/lib/supabase";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import {
   sortDayTasks,
   toggleCalendarDayTask,
@@ -36,6 +37,10 @@ export function WeeklyView({
   setCalendarData,
   selectedDate,
 }: Props) {
+  const [replicateTarget, setReplicateTarget] = useState<{
+    task: CalendarTask;
+    sourceDate: string;
+  } | null>(null);
 
   const notifiedTasks = useRef<Set<string>>(new Set());
 
@@ -223,14 +228,15 @@ export function WeeklyView({
     }));
   }
 
-  // 🔥 REPLICAR TASK (CORRIGIDO)
-  async function replicateTask(task: CalendarTask, startDate: string) {
-
+  async function replicateTask(
+    task: CalendarTask,
+    startDate: string,
+    weekdays: Set<number>
+  ) {
     const userId = await getUserId();
-    if (!userId) return;
+    if (!userId || weekdays.size === 0) return;
 
     const start = parseLocalDate(startDate);
-    const weekday = start.getDay();
     const month = start.getMonth();
     const year = start.getFullYear();
 
@@ -244,8 +250,12 @@ export function WeeklyView({
       .gte("data", monthStart)
       .lte("data", monthEnd);
 
-    const makeKey = (iso: string, hora: string | null, titulo: string, prioridade: string) =>
-      `${iso}|${hora || ""}|${titulo}|${prioridade}`;
+    const makeKey = (
+      iso: string,
+      hora: string | null,
+      titulo: string,
+      prioridade: string
+    ) => `${iso}|${hora || ""}|${titulo}|${prioridade}`;
 
     const existingKeys = new Set(
       (existingRows || []).map((row: any) =>
@@ -257,55 +267,59 @@ export function WeeklyView({
     const insertKeys = new Set<string>();
 
     for (let day = 1; day <= 31; day++) {
-
       const date = new Date(year, month, day);
-
       if (date.getMonth() !== month) break;
+      if (!weekdays.has(date.getDay())) continue;
 
-      if (date.getDay() === weekday) {
+      const iso = formatDateLocal(date);
+      const hora = task.time || null;
+      const k = makeKey(iso, hora, task.title, task.priority);
 
-        const iso = formatDateLocal(date);
-        const hora = task.time || null;
-        const k = makeKey(iso, hora, task.title, task.priority);
+      if (iso === startDate) continue;
+      if (existingKeys.has(k) || insertKeys.has(k)) continue;
 
-        // Nunca replica no mesmo dia de origem.
-        if (iso === startDate) continue;
+      inserts.push({
+        user_id: userId,
+        data: iso,
+        hora,
+        titulo: task.title,
+        prioridade: task.priority,
+        completed: false,
+      });
 
-        // Evita duplicar em dias que já tenham a mesma atividade.
-        if (existingKeys.has(k) || insertKeys.has(k)) continue;
-
-        inserts.push({
-          user_id: userId,
-          data: iso,
-          hora,
-          titulo: task.title,
-          prioridade: task.priority,
-          completed: false
-        });
-
-        insertKeys.add(k);
-
-      }
+      insertKeys.add(k);
     }
 
-    if (inserts.length === 0) return;
+    if (inserts.length === 0) {
+      alert(
+        "Nenhuma data nova neste mês para os dias escolhidos (tudo já existe ou só há o dia de origem)."
+      );
+      return;
+    }
 
-    const { data } = await supabase
+    const { data, error: insertError } = await supabase
       .from("atividades")
       .insert(inserts)
       .select();
 
+    if (insertError) {
+      console.error(insertError);
+      alert("Não foi possível replicar as atividades. Tente novamente.");
+      return;
+    }
+
     const updated = { ...calendarData };
 
-    data?.forEach((t) => {
+    data?.forEach((t: any) => {
       if (!updated[t.data]) updated[t.data] = [];
       updated[t.data].push({
         id: t.id,
         title: t.titulo,
-        time: t.hora ? t.hora.slice(0, 5) : null, // 🔥 CORRIGIDO
+        time: t.hora ? t.hora.slice(0, 5) : null,
         completed: t.completed,
-        priority: t.prioridade
+        priority: t.prioridade,
       });
+      updated[t.data] = sortDayTasks(updated[t.data]);
     });
 
     setCalendarData(updated);
@@ -313,6 +327,20 @@ export function WeeklyView({
 
   return (
     <div className="w-full min-w-0 pb-2 pb-safe md:pb-2">
+      {replicateTarget ? (
+        <ReplicateTaskDialog
+          task={replicateTarget.task}
+          sourceDate={replicateTarget.sourceDate}
+          week={week}
+          onClose={() => setReplicateTarget(null)}
+          onConfirm={(weekdays) => {
+            const payload = replicateTarget;
+            setReplicateTarget(null);
+            if (payload) void replicateTask(payload.task, payload.sourceDate, weekdays);
+          }}
+        />
+      ) : null}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2 sm:gap-3 w-full min-w-0 [&>*]:min-w-0">
         {week.map((day, i) => (
           <WeekCard
@@ -322,15 +350,11 @@ export function WeeklyView({
             index={i}
             onToggleTask={(id) => toggleTask(day.date, id)}
             onDeleteTask={(id) => deleteTask(day.date, id)}
-            onAddTask={(t, p, time) =>
-              addTask(day.date, t, p, time)
-            }
+            onAddTask={(t, p, time) => addTask(day.date, t, p, time)}
             onReplicateTask={(task) =>
-              replicateTask(task, day.date)
+              setReplicateTarget({ task, sourceDate: day.date })
             }
-            onEditTask={(task) =>
-              editTask(day.date, task)
-            }
+            onEditTask={(task) => editTask(day.date, task)}
           />
         ))}
       </div>
