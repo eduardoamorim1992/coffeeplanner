@@ -109,12 +109,12 @@ export function MarketTicker() {
   }, []);
 
   return (
-    <div className="w-full overflow-hidden rounded-lg sm:rounded-none border-y border-border bg-muted/80 dark:border-zinc-800 dark:bg-zinc-950">
-      <div className="flex whitespace-nowrap animate-marquee py-2.5 sm:py-2 text-xs sm:text-sm">
+    <div className="w-full overflow-hidden rounded-md border-y border-border bg-muted/80 sm:rounded-lg sm:rounded-none dark:border-zinc-800 dark:bg-zinc-950">
+      <div className="flex animate-marquee whitespace-nowrap py-1.5 text-[11px] leading-tight sm:py-2 sm:text-xs md:text-sm">
         {[...data, ...data].map((item, i) => (
           <div
             key={i}
-            className="mx-4 sm:mx-8 flex shrink-0 items-center gap-2 sm:gap-3"
+            className="mx-3 flex shrink-0 items-center gap-1.5 sm:mx-6 sm:gap-2 md:mx-8 md:gap-3"
           >
             <span className="text-muted-foreground">{item.name}</span>
 

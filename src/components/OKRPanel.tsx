@@ -249,9 +249,9 @@ export function OKRPanel({ viewedUserId, viewedUserName }: OKRPanelProps = {}) {
   }
 
   return (
-    <div className="space-y-4 transition-all duration-300">
+    <div className="space-y-2 transition-all duration-300 sm:space-y-3 md:space-y-4">
       {message ? (
-        <div className="rounded border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800 dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
+        <div className="rounded border border-red-300 bg-red-50 px-2.5 py-1.5 text-xs text-red-800 sm:px-3 sm:py-2 sm:text-sm dark:border-red-700 dark:bg-red-950/40 dark:text-red-300">
           {message}
         </div>
       ) : null}
@@ -260,7 +260,7 @@ export function OKRPanel({ viewedUserId, viewedUserName }: OKRPanelProps = {}) {
       viewerProfileId &&
       okrOwnerProfileId &&
       viewerProfileId !== okrOwnerProfileId ? (
-        <div className="rounded-lg border border-border bg-muted/50 px-3 py-2 text-sm text-muted-foreground dark:border-zinc-700/80 dark:bg-zinc-900/50 dark:text-zinc-400">
+        <div className="rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-xs text-muted-foreground sm:px-3 sm:py-2 sm:text-sm dark:border-zinc-700/80 dark:bg-zinc-900/50 dark:text-zinc-400">
           Visualização dos OKRs
           {viewedUserName ? (
             <>
@@ -273,8 +273,8 @@ export function OKRPanel({ viewedUserId, viewedUserName }: OKRPanelProps = {}) {
       ) : null}
 
       {canEdit ? (
-      <div className="bg-card border border-border rounded-xl p-3 sm:p-4 space-y-3">
-        <h3 className="text-base sm:text-lg font-semibold">🎯 Planejamento de OKRs</h3>
+      <div className="space-y-2 rounded-lg border border-border bg-card p-2.5 sm:space-y-3 sm:rounded-xl sm:p-3 md:p-4">
+        <h3 className="text-sm font-semibold sm:text-base md:text-lg">🎯 Planejamento de OKRs</h3>
 
         <input
           value={objective}
@@ -339,7 +339,7 @@ export function OKRPanel({ viewedUserId, viewedUserName }: OKRPanelProps = {}) {
       </div>
       ) : null}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 pb-2 md:pb-0">
+      <div className="grid grid-cols-1 gap-2 pb-2 sm:gap-3 lg:grid-cols-2 md:pb-0">
         {loading && (
           <div className="text-sm text-muted-foreground">
             Carregando OKRs...
@@ -356,7 +356,7 @@ export function OKRPanel({ viewedUserId, viewedUserName }: OKRPanelProps = {}) {
         {okrs.map((okr) => (
           <div
             key={okr.id}
-            className={`rounded-xl p-3 sm:p-4 space-y-3 border transition-colors ${
+            className={`space-y-2 rounded-lg border p-2.5 transition-colors sm:space-y-3 sm:rounded-xl sm:p-3 md:p-4 ${
               okr.completed
                 ? "bg-emerald-950/35 border-emerald-500/60 ring-1 ring-emerald-500/25"
                 : "bg-card border-border"

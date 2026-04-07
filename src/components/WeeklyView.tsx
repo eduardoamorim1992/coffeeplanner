@@ -341,7 +341,7 @@ export function WeeklyView({
         />
       ) : null}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2 sm:gap-3 w-full min-w-0 [&>*]:min-w-0">
+      <div className="grid w-full min-w-0 grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2 lg:grid-cols-7 lg:gap-3 [&>*]:min-w-0">
         {week.map((day, i) => (
           <WeekCard
             key={day.date}

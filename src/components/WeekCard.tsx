@@ -75,7 +75,7 @@ export function WeekCard({
     >
 
       {/* HEADER */}
-      <div className="px-4 py-2 border-b border-border/50 flex items-center justify-between">
+      <div className="flex items-center justify-between border-b border-border/50 px-2.5 py-1.5 sm:px-4 sm:py-2">
         <div>
           <p className="text-xs font-semibold capitalize">
             {day.dayName}
@@ -95,7 +95,7 @@ export function WeekCard({
 
       {/* BARRA PROGRESSO */}
       {totalCount > 0 && (
-        <div className="px-4 pt-1">
+        <div className="px-2.5 pt-0.5 sm:px-4 sm:pt-1">
           <div className="w-full h-1 bg-muted/40 rounded overflow-hidden">
             <div
               className="h-full bg-emerald-600 transition-all duration-500 dark:bg-green-500"
@@ -106,7 +106,7 @@ export function WeekCard({
       )}
 
       {/* TASKS */}
-      <div className="px-4 py-2 flex-1 space-y-[6px]">
+      <div className="flex-1 space-y-1 px-2.5 py-1.5 sm:space-y-[6px] sm:px-4 sm:py-2">
 
         {day.tasks.map((task) => (
 
@@ -256,7 +256,7 @@ export function WeekCard({
 
       {/* FOOTER */}
       {totalCount > 0 && (
-        <div className="px-4 py-1 border-t border-border/30">
+        <div className="border-t border-border/30 px-2.5 py-1 sm:px-4">
           <p className="text-[9px] text-muted-foreground font-mono">
             {completedCount}/{totalCount} concluídas
           </p>

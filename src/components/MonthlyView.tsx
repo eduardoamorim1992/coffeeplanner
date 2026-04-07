@@ -104,12 +104,12 @@ export function MonthlyView({
             e.stopPropagation();
             changeMonth(-1);
           }}
-          className="min-h-[44px] min-w-[44px] rounded-xl bg-muted hover:bg-primary/20 transition flex items-center justify-center text-lg"
+          className="flex min-h-10 min-w-10 items-center justify-center rounded-lg bg-muted text-base transition hover:bg-primary/20 sm:min-h-[44px] sm:min-w-[44px] sm:rounded-xl sm:text-lg"
         >
           ◀
         </button>
 
-        <h2 className="text-sm sm:text-lg font-semibold capitalize text-center leading-tight px-1 flex-1">
+        <h2 className="flex-1 px-1 text-center text-xs font-semibold capitalize leading-tight sm:text-sm md:text-lg">
           {new Date(currentYear, currentMonth).toLocaleString("pt-BR", {
             month: "long",
             year: "numeric",
@@ -124,7 +124,7 @@ export function MonthlyView({
             e.stopPropagation();
             changeMonth(1);
           }}
-          className="min-h-[44px] min-w-[44px] rounded-xl bg-muted hover:bg-primary/20 transition flex items-center justify-center text-lg"
+          className="flex min-h-10 min-w-10 items-center justify-center rounded-lg bg-muted text-base transition hover:bg-primary/20 sm:min-h-[44px] sm:min-w-[44px] sm:rounded-xl sm:text-lg"
         >
           ▶
         </button>
@@ -141,12 +141,12 @@ export function MonthlyView({
       </div>
 
       {/* GRID */}
-      <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5 flex-1 px-0 overflow-visible">
+      <div className="grid flex-1 grid-cols-7 gap-px overflow-visible px-0 sm:gap-0.5 md:gap-1.5">
 
         {days.map((date, index) => {
 
           if (!date) {
-            return <div key={index} className="min-h-[3.5rem] sm:min-h-[5rem]" />;
+            return <div key={index} className="min-h-[2.875rem] sm:min-h-[3.5rem] md:min-h-[5rem]" />;
           }
 
           const tasks = calendarData[date] || [];
@@ -178,8 +178,7 @@ export function MonthlyView({
               onMouseEnter={(e) => tasks.length > 0 && showTooltip(date, e.currentTarget.getBoundingClientRect())}
               onMouseLeave={hideTooltip}
               className={`
-                relative group min-h-[3.5rem] sm:min-h-[5rem] border rounded-md sm:rounded-lg p-0.5 sm:p-1.5 text-left cursor-pointer transition-all active:scale-[0.98]
-                touch-manipulation
+                group relative min-h-[2.875rem] cursor-pointer rounded border p-0.5 text-left transition-all active:scale-[0.98] touch-manipulation sm:min-h-[3.5rem] sm:rounded-md sm:p-1 md:min-h-[5rem] md:rounded-lg md:p-1.5
 
                 ${status === "done" && "bg-green-500/20 border-green-500"}
                 ${status === "pending" && high > 0 && "bg-red-500/10 border-red-500"}

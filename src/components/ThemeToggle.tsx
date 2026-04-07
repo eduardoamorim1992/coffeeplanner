@@ -7,13 +7,15 @@ export function ThemeToggle() {
 
   return (
     <button
+      type="button"
       onClick={toggleTheme}
-      className="p-2 rounded-lg bg-muted text-foreground hover:bg-primary/15 hover:text-primary transition"
+      aria-label={theme === "dark" ? "Tema claro" : "Tema escuro"}
+      className="touch-target rounded-lg bg-muted p-1.5 text-foreground transition hover:bg-primary/15 hover:text-primary sm:p-2"
     >
       {theme === "dark" ? (
-        <Sun size={18} />
+        <Sun className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]" />
       ) : (
-        <Moon size={18} />
+        <Moon className="h-[17px] w-[17px] sm:h-[18px] sm:w-[18px]" />
       )}
     </button>
   );

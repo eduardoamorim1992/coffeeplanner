@@ -449,7 +449,7 @@ export default function DivisionPage() {
     `px-5 py-2.5 rounded-2xl border text-sm font-semibold tracking-[0.01em] transition-all duration-200 active:scale-[0.98] ${tabActive(active)}`;
 
   const tabMobile = (active: boolean) =>
-    `flex-1 min-h-[52px] rounded-2xl border text-sm font-semibold tracking-[0.01em] transition-all duration-200 active:scale-[0.98] ${tabActive(active)}`;
+    `flex-1 min-h-[46px] rounded-xl border text-[11px] font-semibold leading-tight tracking-tight transition-all duration-200 active:scale-[0.98] sm:min-h-[50px] sm:rounded-2xl sm:text-sm sm:tracking-[0.01em] ${tabActive(active)}`;
 
   return (
     <div className="flex h-[100dvh] min-h-0 bg-background overflow-hidden">
@@ -458,7 +458,7 @@ export default function DivisionPage() {
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
         <AppHeader divisionName={userName} />
 
-        <main className="flex-1 min-h-0 p-3 sm:p-4 md:p-6 space-y-3 sm:space-y-4 overflow-y-auto overscroll-y-contain pb-[calc(5.5rem+env(safe-area-inset-bottom,0px))] md:pb-6">
+        <main className="flex-1 min-h-0 space-y-2 overflow-y-auto overscroll-y-contain px-2 pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] pt-2 sm:space-y-3 sm:px-3 sm:pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:pt-3 md:space-y-4 md:p-6 md:pb-6">
           <MarketTicker />
           <MotivationalBar />
 
@@ -521,33 +521,33 @@ export default function DivisionPage() {
 
         {/* Barra inferior — mobile (estilo app nativo) */}
         <nav
-          className="md:hidden fixed bottom-0 inset-x-0 z-40 border-t border-border bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/85 pb-safe pt-2 px-2 shadow-[0_-4px_24px_rgba(0,0,0,0.12)] dark:shadow-[0_-4px_24px_rgba(0,0,0,0.4)]"
+          className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-background/95 pb-safe pt-1 shadow-[0_-2px_16px_rgba(0,0,0,0.08)] backdrop-blur-md supports-[backdrop-filter]:bg-background/88 dark:shadow-[0_-2px_20px_rgba(0,0,0,0.35)] md:hidden"
           aria-label="Navegação principal"
         >
-          <div className="flex gap-1.5 max-w-lg mx-auto">
+          <div className="mx-auto flex max-w-lg gap-1 px-1.5 sm:gap-1.5 sm:px-2">
             <button
               type="button"
               onClick={() => setView("calendar")}
-              className={`${tabMobile(view === "calendar")} flex flex-col gap-0.5 py-2`}
+              className={`${tabMobile(view === "calendar")} flex flex-col items-center justify-center gap-px py-1.5 sm:gap-0.5 sm:py-2`}
             >
-              <span className="text-lg leading-none">📅</span>
-              <span className="text-[11px] font-semibold leading-tight">Calendário</span>
+              <span className="text-base leading-none sm:text-lg">📅</span>
+              <span>Calendário</span>
             </button>
             <button
               type="button"
               onClick={() => setView("chart")}
-              className={`${tabMobile(view === "chart")} flex flex-col gap-0.5 py-2`}
+              className={`${tabMobile(view === "chart")} flex flex-col items-center justify-center gap-px py-1.5 sm:gap-0.5 sm:py-2`}
             >
-              <span className="text-lg leading-none">📊</span>
-              <span className="text-[11px] font-semibold leading-tight">Gráfico</span>
+              <span className="text-base leading-none sm:text-lg">📊</span>
+              <span>Gráfico</span>
             </button>
             <button
               type="button"
               onClick={() => setView("okr")}
-              className={`${tabMobile(view === "okr")} flex flex-col gap-0.5 py-2`}
+              className={`${tabMobile(view === "okr")} flex flex-col items-center justify-center gap-px py-1.5 sm:gap-0.5 sm:py-2`}
             >
-              <span className="text-lg leading-none">🎯</span>
-              <span className="text-[11px] font-semibold leading-tight">OKR</span>
+              <span className="text-base leading-none sm:text-lg">🎯</span>
+              <span>OKR</span>
             </button>
           </div>
         </nav>

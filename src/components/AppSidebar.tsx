@@ -229,6 +229,36 @@ export default function AppSidebar() {
     }
   }, [users, location.pathname]);
 
+  function collapsedItemClasses(isActive: boolean) {
+    return collapsed
+      ? `relative flex h-11 w-full shrink-0 items-center justify-center rounded-xl transition active:scale-[0.97] ${
+          isActive
+            ? "bg-primary/12 text-primary ring-1 ring-inset ring-primary/40 dark:bg-primary/25 dark:text-primary-foreground dark:ring-primary/55"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        }`
+      : "";
+  }
+
+  function footerBtnClasses(kind: "default" | "amber" = "default") {
+    const layout = collapsed
+      ? "flex h-11 w-full shrink-0 items-center justify-center rounded-xl px-0"
+      : "flex min-h-[44px] w-full shrink-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm";
+    if (kind === "amber") {
+      return `${layout} border border-amber-300/80 text-amber-800 transition hover:bg-amber-100/80 hover:text-amber-950 active:scale-[0.98] dark:border-amber-500/30 dark:text-amber-400/90 dark:hover:bg-amber-500/10 dark:hover:text-amber-300`;
+    }
+    return `${layout} text-muted-foreground transition hover:bg-sidebar-accent hover:text-sidebar-foreground active:bg-sidebar-accent/80`;
+  }
+
+  function expandedItemClasses(isActive: boolean) {
+    return !collapsed
+      ? `flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm active:bg-sidebar-accent/80 ${
+          isActive
+            ? "bg-primary text-primary-foreground"
+            : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+        }`
+      : "";
+  }
+
   return (
     <>
       <button
@@ -237,8 +267,8 @@ export default function AppSidebar() {
         onClick={() => setIsMobileOpen(true)}
         className="md:hidden fixed z-50 touch-target rounded-xl border border-border bg-card text-foreground shadow-md backdrop-blur-sm dark:border-zinc-700 dark:bg-zinc-900/95 dark:shadow-lg"
         style={{
-          top: "max(0.75rem, env(safe-area-inset-top, 0px))",
-          left: "max(0.75rem, env(safe-area-inset-left, 0px))",
+          top: "max(0.5rem, env(safe-area-inset-top, 0px))",
+          left: "max(0.5rem, env(safe-area-inset-left, 0px))",
         }}
       >
         <Menu size={22} className="text-foreground dark:text-white" />
@@ -270,29 +300,37 @@ export default function AppSidebar() {
           }
         `}
       >
-        <div className="shrink-0 p-4 flex items-center justify-between border-b border-sidebar-border">
+        <div
+          className={`flex shrink-0 items-center border-b border-sidebar-border p-3 md:p-4 ${
+            collapsed ? "justify-center" : "justify-between"
+          }`}
+        >
           {!collapsed && (
             <span className="text-lg font-bold text-sidebar-foreground">Usuários</span>
           )}
 
           <button
+            type="button"
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden md:block text-muted-foreground hover:text-sidebar-foreground"
+            className="hidden touch-target rounded-lg text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground md:flex md:items-center md:justify-center"
+            aria-label={collapsed ? "Expandir menu" : "Recolher menu"}
           >
-            {collapsed ? <ChevronRight /> : <ChevronLeft />}
+            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
           </button>
 
           <button
             type="button"
             onClick={() => setIsMobileOpen(false)}
-            className="md:hidden rounded-lg p-1 text-sidebar-foreground hover:bg-sidebar-accent"
+            className="rounded-lg p-1 text-sidebar-foreground hover:bg-sidebar-accent md:hidden"
             aria-label="Fechar menu"
           >
             <X size={22} />
           </button>
         </div>
 
-        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain p-2 pb-2 space-y-2 [scrollbar-gutter:stable]">
+        <div
+          className="min-h-0 flex-1 space-y-1.5 overflow-y-auto overflow-x-hidden overscroll-y-contain p-2 pb-2 [scrollbar-gutter:stable] [scrollbar-width:thin] [scrollbar-color:hsl(var(--sidebar-border))_transparent] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-thumb]:bg-sidebar-border/80"
+        >
           {/* DASHBOARD */}
             {(me?.role === "admin" ||
               ["diretor", "coordenador", "supervisor", "gerente"].includes(
@@ -304,13 +342,14 @@ export default function AppSidebar() {
                 navigate("/dashboard");
                 setIsMobileOpen(false);
               }}
-              className={`flex shrink-0 min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm active:bg-sidebar-accent/80 ${
-                location.pathname === "/dashboard"
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
+              title={collapsed ? "Dashboard" : undefined}
+              className={`shrink-0 ${
+                collapsed
+                  ? collapsedItemClasses(location.pathname === "/dashboard")
+                  : expandedItemClasses(location.pathname === "/dashboard")
               }`}
             >
-              <LayoutDashboard size={18} />
+              <LayoutDashboard size={collapsed ? 20 : 18} strokeWidth={collapsed ? 2 : 1.75} />
               {!collapsed && "Dashboard"}
             </button>
           )}
@@ -320,6 +359,7 @@ export default function AppSidebar() {
             ? sortUsersByHierarchy(users).map((u) => {
                 const pending = pendingTotals[u.id] || 0;
                 const isActive = location.pathname === `/user/${u.id}`;
+                const pendingLabel = pending > 99 ? "99+" : String(pending);
                 return (
                   <button
                     type="button"
@@ -328,19 +368,21 @@ export default function AppSidebar() {
                       navigate(`/user/${u.id}`);
                       setIsMobileOpen(false);
                     }}
-                    className={`flex min-h-[44px] w-full items-center justify-between rounded-lg px-3 py-2.5 text-sm active:bg-sidebar-accent/80 ${
-                      isActive
-                        ? "bg-primary text-primary-foreground"
-                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-foreground"
-                    }`}
                     title={u.nome}
+                    className={collapsedItemClasses(isActive)}
                   >
-                    <User size={18} />
-                    {pending > 0 && (
-                      <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground dark:bg-zinc-700 dark:text-white">
-                        {pending}
+                    <User size={collapsed ? 20 : 18} strokeWidth={collapsed ? 2 : 1.75} className="shrink-0" />
+                    {pending > 0 ? (
+                      <span
+                        className={`absolute -right-0.5 -top-0.5 flex h-[17px] min-w-[17px] items-center justify-center rounded-full border-2 border-sidebar px-0.5 text-[9px] font-bold tabular-nums leading-none ${
+                          isActive
+                            ? "border-primary/50 bg-primary text-primary-foreground"
+                            : "bg-muted text-foreground dark:border-zinc-800 dark:bg-zinc-600 dark:text-white"
+                        }`}
+                      >
+                        {pendingLabel}
                       </span>
-                    )}
+                    ) : null}
                   </button>
                 );
               })
@@ -450,9 +492,10 @@ export default function AppSidebar() {
                   navigate("/admin/users");
                   setIsMobileOpen(false);
                 }}
-                className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent active:bg-sidebar-accent/80"
+                title={collapsed ? "Gerenciar Usuários" : undefined}
+                className={footerBtnClasses("default")}
               >
-                <Settings size={18} />
+                <Settings size={collapsed ? 20 : 18} />
                 {!collapsed && "Gerenciar Usuários"}
               </button>
               <button
@@ -461,10 +504,14 @@ export default function AppSidebar() {
                   setShowPaymentModal(true);
                   setIsMobileOpen(false);
                 }}
-                title="Ver datas de cadastro — monitorar pagamento a cada 30 dias"
-                className="flex min-h-[44px] w-full items-center gap-3 rounded-lg border border-amber-300/80 px-3 py-2.5 text-sm text-amber-800 hover:bg-amber-100/80 hover:text-amber-950 dark:border-amber-500/30 dark:text-amber-400/90 dark:hover:bg-amber-500/10 dark:hover:text-amber-300"
+                title={
+                  collapsed
+                    ? "Datas de cadastro"
+                    : "Ver datas de cadastro — monitorar pagamento a cada 30 dias"
+                }
+                className={footerBtnClasses("amber")}
               >
-                <CalendarCheck size={18} />
+                <CalendarCheck size={collapsed ? 20 : 18} />
                 {!collapsed && "Datas de cadastro"}
               </button>
             </>
@@ -476,9 +523,10 @@ export default function AppSidebar() {
               navigate("/alterar-senha");
               setIsMobileOpen(false);
             }}
-            className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent active:bg-sidebar-accent/80"
+            title={collapsed ? "Alterar senha" : undefined}
+            className={footerBtnClasses("default")}
           >
-            <KeyRound size={18} />
+            <KeyRound size={collapsed ? 20 : 18} />
             {!collapsed && "Alterar senha"}
           </button>
 
@@ -488,9 +536,10 @@ export default function AppSidebar() {
               setIsMobileOpen(false);
               handleLogout();
             }}
-            className="flex min-h-[44px] w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm text-muted-foreground hover:bg-sidebar-accent active:bg-sidebar-accent/80"
+            title={collapsed ? "Sair" : undefined}
+            className={footerBtnClasses("default")}
           >
-            <LogOut size={18} />
+            <LogOut size={collapsed ? 20 : 18} />
             {!collapsed && "Sair"}
           </button>
         </div>

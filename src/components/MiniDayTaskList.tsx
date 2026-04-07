@@ -55,6 +55,11 @@ export function MiniDayTaskList({
     day: "numeric",
     month: "long",
   });
+  const shortLabel = parsed.toLocaleDateString("pt-BR", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+  });
 
   const tasks = sortDayTasks(calendarData[isoDate] || []);
   const done = tasks.filter((t) => t.completed).length;
@@ -73,19 +78,23 @@ export function MiniDayTaskList({
   }
 
   return (
-    <div className="flex flex-col min-h-[180px] max-h-[min(70vh,520px)] rounded-xl border border-border bg-card/95 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-none lg:sticky lg:top-4">
-      <div className="shrink-0 space-y-1 border-b border-border px-3 py-3 sm:px-4 dark:border-zinc-800/80">
-        <div className="flex items-start justify-between gap-2">
+    <div className="flex max-h-[min(58vh,480px)] min-h-[140px] flex-col rounded-lg border border-border bg-card/95 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-none sm:min-h-[160px] sm:max-h-[min(65vh,500px)] sm:rounded-xl md:min-h-[180px] md:max-h-[min(70vh,520px)] lg:sticky lg:top-4">
+      <div className="shrink-0 space-y-0.5 border-b border-border px-2.5 py-2 dark:border-zinc-800/80 sm:space-y-1 sm:px-3 sm:py-3 md:px-4">
+        <div className="flex items-start justify-between gap-1.5 sm:gap-2">
           <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              Atividades do dia
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground sm:text-xs">
+              <span className="sm:hidden">Do dia</span>
+              <span className="hidden sm:inline">Atividades do dia</span>
             </p>
-            <p className="truncate text-sm font-semibold capitalize leading-snug text-foreground dark:text-zinc-100">
+            <p className="truncate text-xs font-semibold capitalize leading-tight text-foreground sm:hidden dark:text-zinc-100">
+              {shortLabel}
+            </p>
+            <p className="hidden truncate text-sm font-semibold capitalize leading-snug text-foreground sm:block dark:text-zinc-100">
               {longLabel}
             </p>
           </div>
           {isToday ? (
-            <span className="shrink-0 rounded-full bg-primary/20 px-2 py-0.5 text-[10px] font-semibold text-primary">
+            <span className="shrink-0 rounded-full bg-primary/20 px-1.5 py-0.5 text-[9px] font-semibold text-primary sm:px-2 sm:text-[10px]">
               Hoje
             </span>
           ) : null}
@@ -101,9 +110,11 @@ export function MiniDayTaskList({
 
       <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-2 sm:px-3 py-2 space-y-1.5">
         {tasks.length === 0 ? (
-          <p className="px-1 py-2 text-xs text-muted-foreground">
-            Sem atividades neste dia. Escolha outro dia no calendário ou abra a
-            visão semanal para criar tarefas.
+          <p className="px-0.5 py-1.5 text-[11px] leading-snug text-muted-foreground sm:px-1 sm:py-2 sm:text-xs">
+            <span className="sm:hidden">Nada neste dia — toque em outro dia ou em “Ver semana”.</span>
+            <span className="hidden sm:inline">
+              Sem atividades neste dia. Escolha outro dia no calendário ou abra a visão semanal.
+            </span>
           </p>
         ) : (
           tasks.map((task) => (
@@ -149,13 +160,14 @@ export function MiniDayTaskList({
         )}
       </div>
 
-      <div className="shrink-0 border-t border-border px-3 py-2 dark:border-zinc-800/80">
+      <div className="shrink-0 border-t border-border px-2 py-1.5 dark:border-zinc-800/80 sm:px-3 sm:py-2">
         <button
           type="button"
           onClick={onOpenWeek}
-          className="h-10 min-h-[40px] w-full rounded-lg border border-border bg-muted/40 text-xs font-medium text-foreground transition hover:bg-muted hover:text-foreground active:scale-[0.99] dark:border-zinc-700/80 dark:bg-zinc-900/50 dark:text-zinc-300 dark:hover:bg-zinc-800/80 dark:hover:text-white"
+          className="h-9 min-h-9 w-full rounded-lg border border-border bg-muted/40 text-[11px] font-medium text-foreground transition hover:bg-muted active:scale-[0.99] dark:border-zinc-700/80 dark:bg-zinc-900/50 dark:text-zinc-300 dark:hover:bg-zinc-800/80 dark:hover:text-white sm:h-10 sm:min-h-[40px] sm:text-xs"
         >
-          Abrir visão semanal
+          <span className="sm:hidden">Ver semana</span>
+          <span className="hidden sm:inline">Abrir visão semanal</span>
         </button>
       </div>
     </div>
