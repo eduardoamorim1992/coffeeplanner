@@ -73,7 +73,7 @@ function mergeWithPrevious(current, previousItems) {
 function extractSectionValue(html, sectionLabel) {
   const escaped = sectionLabel.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const sectionRegex = new RegExp(
-    `<h2>[^<]*${escaped}[^<]*<\\/h2>[\\s\\S]{0,8000}?<tbody>[\\s\\S]{0,5000}?<tr[^>]*>[\\s\\S]{0,1200}?<td[^>]*>[^<]*<\\/td>[\\s\\S]{0,1200}?<td[^>]*>([^<]+)<\\/td>(?:[\\s\\S]{0,1200}?<td[^>]*>([^<]+)<\\/td>)?`,
+    `<h2[^>]*>[^<]*${escaped}[^<]*<\\/h2>[\\s\\S]{0,8000}?<tbody>[\\s\\S]{0,5000}?<tr[^>]*>[\\s\\S]{0,1200}?<td[^>]*>[^<]*<\\/td>[\\s\\S]{0,1200}?<td[^>]*>([^<]+)<\\/td>(?:[\\s\\S]{0,1200}?<td[^>]*>([^<]+)<\\/td>)?`,
     "i"
   );
   const match = html.match(sectionRegex);

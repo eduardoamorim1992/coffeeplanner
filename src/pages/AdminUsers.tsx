@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 
@@ -24,6 +24,8 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const [successMessage, setSuccessMessage] = useState("");
+  /** Filtro da lista (não confundir com email do formulário de novo usuário) */
+  const [listSearch, setListSearch] = useState("");
 
   // 🔥 LOAD
   async function loadData() {
@@ -214,6 +216,16 @@ export default function AdminUsers() {
       .map((r) => r.manager_id);
   }
 
+  const filteredUsers = useMemo(() => {
+    const q = listSearch.trim().toLowerCase();
+    if (!q) return users;
+    return users.filter((u) => {
+      const nomeStr = String(u.nome ?? "").toLowerCase();
+      const emailStr = String(u.email ?? "").toLowerCase();
+      return nomeStr.includes(q) || emailStr.includes(q);
+    });
+  }, [users, listSearch]);
+
   return (
     <div className="p-6 text-white">
       <button onClick={() => navigate("/dashboard")}>
@@ -277,9 +289,31 @@ export default function AdminUsers() {
         </div>
       ) : null}
 
+      <div className="mb-4 max-w-xl">
+        <label htmlFor="admin-users-search" className="mb-1 block text-sm text-zinc-400">
+          Buscar na lista
+        </label>
+        <input
+          id="admin-users-search"
+          type="search"
+          placeholder="Nome ou e-mail…"
+          value={listSearch}
+          onChange={(e) => setListSearch(e.target.value)}
+          autoComplete="off"
+          className="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+        />
+        {listSearch.trim() ? (
+          <p className="mt-1.5 text-xs text-zinc-500">
+            {filteredUsers.length === 0
+              ? "Nenhum usuário encontrado."
+              : `Exibindo ${filteredUsers.length} de ${users.length} usuário${users.length === 1 ? "" : "s"}.`}
+          </p>
+        ) : null}
+      </div>
+
       {/* LISTA */}
       <div className="space-y-3">
-        {users.map((u) => {
+        {filteredUsers.map((u) => {
           const managersIds = getManagers(u.id);
 
           return (

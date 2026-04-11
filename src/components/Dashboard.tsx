@@ -2,6 +2,7 @@ import { RankingBoard } from "@/components/RankingBoard";
 import { AlertsPanel } from "@/components/AlertsPanel";
 import AppSidebar from "@/components/AppSidebar";
 import { AppHeader } from "@/components/AppHeader";
+import { QuickInsightCapture } from "@/components/QuickInsightCapture";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -472,6 +473,8 @@ export default function Dashboard() {
 
         </main>
       </div>
+
+      <QuickInsightCapture contextLabel="Dashboard executivo" />
     </div>
   );
 }

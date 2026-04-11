@@ -6,7 +6,7 @@ import {
   type MarketItem,
 } from "@/lib/marketQuotes";
 
-const STORAGE_KEY = "market-last-quote";
+const STORAGE_KEY = "market-last-quote-v2";
 
 function parseStored(): { items: MarketItem[]; savedAt?: string } | null {
   try {

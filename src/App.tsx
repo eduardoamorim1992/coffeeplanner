@@ -4,6 +4,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
+import { Toaster } from "sonner";
 
 import DivisionPage from "@/pages/DivisionPage";
 import Dashboard from "@/components/Dashboard";
@@ -35,6 +36,7 @@ function ProtectedRoute({ children }: any) {
 export default function App() {
   return (
     <BrowserRouter>
+      <Toaster richColors closeButton position="top-center" />
       <Routes>
 
         {/* LOGIN */}

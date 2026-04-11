@@ -2,6 +2,7 @@ import { useParams } from "react-router-dom";
 import { MotivationalBar } from "@/components/MotivationalBar";
 import { MarketTicker } from "@/components/MarketTicker";
 import { AppHeader } from "@/components/AppHeader";
+import { QuickInsightCapture } from "@/components/QuickInsightCapture";
 import AppSidebar from "@/components/AppSidebar";
 import { CalendarView } from "@/components/CalendarView";
 import { DashboardChart } from "@/components/DashboardChart";
@@ -552,6 +553,11 @@ export default function DivisionPage() {
           </div>
         </nav>
       </div>
+
+      <QuickInsightCapture
+        contextLabel={userName}
+        reserveMobileNav
+      />
     </div>
   );
 }

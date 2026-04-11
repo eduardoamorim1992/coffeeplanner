@@ -22,8 +22,9 @@ export function mergeMarketRows(
   previous: MarketItem[] | null
 ): MarketItem[] {
   if (!previous?.length) return current;
-  return current.map((item, i) => {
-    const prev = previous[i];
+  const prevByName = new Map(previous.map((it) => [it.name, it]));
+  return current.map((item) => {
+    const prev = prevByName.get(item.name);
     if (!prev) return item;
     return {
       ...item,
