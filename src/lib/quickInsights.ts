@@ -1,77 +1,49 @@
 /**
- * Insights rápidos — persistência local por usuário (Supabase uid).
+ * Insights rápidos — tipos, ordenação e dicas (persistência no Supabase).
  */
-
-export type QuickInsightTag = "ideia" | "followup" | "risco" | "win";
 
 export type QuickInsight = {
   id: string;
   text: string;
-  tags: QuickInsightTag[];
+  /** Slugs estáveis (ex.: ideia, followup ou c_xxx para tags personalizadas). */
+  tags: string[];
   contextLabel: string;
   route: string;
   createdAt: string;
   pinned?: boolean;
+  /** Preenchido ao marcar "Concluído"; removido do banco ~24h depois. */
+  completedAt?: string | null;
 };
 
-export const INSIGHT_TAG_PRESETS: {
-  id: QuickInsightTag;
-  label: string;
-  emoji: string;
-}[] = [
-  { id: "ideia", label: "Ideia", emoji: "💡" },
-  { id: "followup", label: "Follow-up", emoji: "📌" },
-  { id: "risco", label: "Risco", emoji: "⚠️" },
-  { id: "win", label: "Vitória", emoji: "🏆" },
-];
+/** Rótulos padrão para slugs antigos ou presets removidos. */
+const LEGACY_TAG_LABELS: Record<string, { emoji: string; label: string }> = {
+  ideia: { emoji: "💡", label: "Ideia" },
+  followup: { emoji: "📌", label: "Follow-up" },
+  risco: { emoji: "⚠️", label: "Risco" },
+  win: { emoji: "🏆", label: "Vitória" },
+};
 
-const MAX_STORED = 80;
+export type TagPresetLike = { slug: string; label: string; emoji: string };
 
-export function storageKeyForUser(userId: string | null | undefined): string {
-  const id = userId?.trim() || "anon";
-  return `corporate-compass-quick-insights:${id}`;
-}
-
-export function loadInsights(key: string): QuickInsight[] {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return [];
-    const j = JSON.parse(raw) as unknown;
-    if (!Array.isArray(j)) return [];
-    return sortInsights(j.filter(isValidInsight));
-  } catch {
-    return [];
-  }
-}
-
-function isValidInsight(x: unknown): x is QuickInsight {
-  if (!x || typeof x !== "object") return false;
-  const o = x as Record<string, unknown>;
-  return (
-    typeof o.id === "string" &&
-    typeof o.text === "string" &&
-    typeof o.contextLabel === "string" &&
-    typeof o.route === "string" &&
-    typeof o.createdAt === "string" &&
-    Array.isArray(o.tags)
-  );
+export function resolveTagDisplay(
+  slug: string,
+  presets: TagPresetLike[]
+): { emoji: string; label: string } {
+  const p = presets.find((x) => x.slug === slug);
+  if (p) return { emoji: p.emoji || "💬", label: p.label };
+  const leg = LEGACY_TAG_LABELS[slug];
+  if (leg) return leg;
+  return { emoji: "🏷️", label: slug };
 }
 
 export function sortInsights(items: QuickInsight[]): QuickInsight[] {
   return [...items].sort((a, b) => {
+    const ac = Boolean(a.completedAt);
+    const bc = Boolean(b.completedAt);
+    if (ac !== bc) return ac ? 1 : -1;
     if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
-}
-
-export function saveInsights(key: string, items: QuickInsight[]): QuickInsight[] {
-  const trimmed = sortInsights(items).slice(0, MAX_STORED);
-  try {
-    localStorage.setItem(key, JSON.stringify(trimmed));
-  } catch {
-    /* quota */
-  }
-  return trimmed;
 }
 
 export function insightSmartHint(text: string): string | null {

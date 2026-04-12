@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import { Toaster } from "sonner";
 
+import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import DivisionPage from "@/pages/DivisionPage";
 import Dashboard from "@/components/Dashboard";
 import Login from "@/pages/Login";
@@ -36,7 +37,20 @@ function ProtectedRoute({ children }: any) {
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster richColors closeButton position="top-center" />
+      <Toaster
+        richColors
+        closeButton
+        position="top-center"
+        expand
+        visibleToasts={4}
+        toastOptions={{
+          classNames: {
+            toast:
+              "min-h-[48px] text-base sm:text-sm touch-manipulation",
+          },
+        }}
+      />
+      <PwaInstallPrompt />
       <Routes>
 
         {/* LOGIN */}
