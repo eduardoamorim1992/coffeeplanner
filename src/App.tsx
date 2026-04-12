@@ -6,6 +6,7 @@ import {
 } from "react-router-dom";
 import { Toaster } from "sonner";
 
+import { DesktopNotifyProvider } from "@/contexts/DesktopNotifyContext";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import DivisionPage from "@/pages/DivisionPage";
 import Dashboard from "@/components/Dashboard";
@@ -37,21 +38,22 @@ function ProtectedRoute({ children }: any) {
 export default function App() {
   return (
     <BrowserRouter>
-      <Toaster
-        richColors
-        closeButton
-        position="top-center"
-        expand
-        visibleToasts={4}
-        toastOptions={{
-          classNames: {
-            toast:
-              "min-h-[48px] text-base sm:text-sm touch-manipulation",
-          },
-        }}
-      />
-      <PwaInstallPrompt />
-      <Routes>
+      <DesktopNotifyProvider>
+        <Toaster
+          richColors
+          closeButton
+          position="top-center"
+          expand
+          visibleToasts={4}
+          toastOptions={{
+            classNames: {
+              toast:
+                "min-h-[48px] text-base sm:text-sm touch-manipulation",
+            },
+          }}
+        />
+        <PwaInstallPrompt />
+        <Routes>
 
         {/* LOGIN */}
         <Route path="/login" element={<Login />} />
@@ -100,7 +102,8 @@ export default function App() {
         {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
-      </Routes>
+        </Routes>
+      </DesktopNotifyProvider>
     </BrowserRouter>
   );
 }

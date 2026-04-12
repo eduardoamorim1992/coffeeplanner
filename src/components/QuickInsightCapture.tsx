@@ -47,6 +47,7 @@ import {
   type InsightTextTemplate,
 } from "@/lib/insightPresetsRepository";
 import { toast } from "sonner";
+import { useDesktopNotify } from "@/contexts/DesktopNotifyContext";
 
 type SpeechRec = {
   lang: string;
@@ -365,6 +366,7 @@ function InsightListCard({
   onCopy: (item: QuickInsight) => void;
   onRemove: (id: string) => void;
 }) {
+  const { notify } = useDesktopNotify();
   const [body, setBody] = useState(it.text);
   const [savingBody, setSavingBody] = useState(false);
   const completed = Boolean(it.completedAt);
@@ -399,10 +401,23 @@ function InsightListCard({
       toast.error(error);
       return;
     }
-    toast.success("Concluído", {
-      description: "Esta anotação será excluída automaticamente após 24 horas.",
-    });
     await onRefresh();
+    const desktop =
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 768px)").matches;
+    if (desktop) {
+      notify({
+        title: "Concluído",
+        description:
+          "Esta anotação será excluída automaticamente após 24 horas.",
+        variant: "success",
+      });
+    } else {
+      toast.success("Concluído", {
+        description:
+          "Esta anotação será excluída automaticamente após 24 horas.",
+      });
+    }
   };
 
   return (
@@ -519,6 +534,7 @@ export function QuickInsightCapture({
   contextLabel,
   reserveMobileNav = false,
 }: QuickInsightCaptureProps) {
+  const { notify } = useDesktopNotify();
   const location = useLocation();
   const isMobile = useIsMobile();
   const [open, setOpen] = useState(false);
@@ -664,16 +680,27 @@ export function QuickInsightCapture({
     setDraft("");
     setSelectedTags([tagPresets.find((p) => p.slug === "ideia")?.slug ?? tagPresets[0]?.slug ?? "ideia"]);
     await refreshPresetsAndList();
-    if (typeof navigator !== "undefined" && navigator.vibrate) {
-      try {
-        navigator.vibrate(40);
-      } catch {
-        /* alguns navegadores bloqueiam */
+    const desktop =
+      typeof window !== "undefined" &&
+      window.matchMedia("(min-width: 768px)").matches;
+    if (desktop) {
+      notify({
+        title: "Insight guardado",
+        description: "Sincronizado com o banco de dados da sua conta.",
+        variant: "success",
+      });
+    } else {
+      if (typeof navigator !== "undefined" && navigator.vibrate) {
+        try {
+          navigator.vibrate(40);
+        } catch {
+          /* alguns navegadores bloqueiam */
+        }
       }
+      toast.success("Insight guardado", {
+        description: "Sincronizado com o banco de dados da sua conta.",
+      });
     }
-    toast.success("Insight guardado", {
-      description: "Sincronizado com o banco de dados da sua conta.",
-    });
     textareaRef.current?.focus();
   };
 
