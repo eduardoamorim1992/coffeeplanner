@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
+import { LoginMouseBackground } from "@/components/LoginMouseBackground";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -110,8 +111,9 @@ export default function Cadastro() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="glass-card p-8 w-full max-w-sm space-y-4">
+    <div className="dark relative min-h-screen flex min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4">
+      <LoginMouseBackground />
+      <div className="glass-card relative z-10 p-8 w-full max-w-sm space-y-4">
         <h2 className="text-lg font-semibold text-center text-foreground">
           Cadastrar
         </h2>

@@ -3,6 +3,7 @@ import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
+import { LoginMouseBackground } from "@/components/LoginMouseBackground";
 
 /**
  * Processa o retorno do email de recuperação (PKCE, magic link com hash ou token_hash na query).
@@ -173,15 +174,17 @@ export default function DefinirSenha() {
 
   if (!sessionReady && !message) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background px-4">
-        <p className="text-sm text-muted-foreground">Validando link...</p>
+      <div className="dark relative flex min-h-screen min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4">
+        <LoginMouseBackground />
+        <p className="relative z-10 text-sm text-zinc-400">Validando link...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background px-4">
-      <div className="w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6 shadow-lg">
+    <div className="dark relative flex min-h-screen min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4">
+      <LoginMouseBackground />
+      <div className="relative z-10 w-full max-w-sm space-y-4 rounded-xl border border-border bg-card p-6 shadow-lg">
         <h1 className="text-lg font-semibold text-foreground">
           Definir nova senha
         </h1>

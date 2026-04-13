@@ -1,10 +1,12 @@
 import { Link } from "react-router-dom";
+import { LoginMouseBackground } from "@/components/LoginMouseBackground";
 import { MailCheck } from "lucide-react";
 
 export default function CadastroObrigado() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4">
-      <div className="glass-card p-8 w-full max-w-sm space-y-4 text-center">
+    <div className="dark relative min-h-screen flex min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4">
+      <LoginMouseBackground />
+      <div className="glass-card relative z-10 p-8 w-full max-w-sm space-y-4 text-center">
         <MailCheck className="w-12 h-12 mx-auto text-emerald-400" />
         <h2 className="text-lg font-semibold text-foreground">
           Cadastro enviado

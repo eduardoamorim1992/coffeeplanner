@@ -34,6 +34,25 @@
   </head>
 
   <body>
+    <!-- Roda com <body> já criado: pinta html + body nas rotas de auth (evita branco ao F5) -->
+    <script>
+      (function () {
+        var p = location.pathname;
+        if (
+          p === "/login" ||
+          p === "/cadastro" ||
+          p === "/cadastro/obrigado" ||
+          p === "/aguardando-aprovacao" ||
+          p === "/definir-senha"
+        ) {
+          var bg = "hsl(220, 20%, 7%)";
+          document.documentElement.style.backgroundColor = bg;
+          document.documentElement.style.colorScheme = "dark";
+          document.body.style.backgroundColor = bg;
+          document.body.style.colorScheme = "dark";
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

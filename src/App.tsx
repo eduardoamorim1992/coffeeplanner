@@ -8,6 +8,7 @@ import {
 import { Toaster } from "sonner";
 
 import { DesktopNotifyProvider } from "@/contexts/DesktopNotifyContext";
+import { AuthHtmlChrome } from "@/components/AuthHtmlChrome";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import DivisionPage from "@/pages/DivisionPage";
 import Dashboard from "@/components/Dashboard";
@@ -107,6 +108,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 export default function App() {
   return (
     <BrowserRouter>
+      <AuthHtmlChrome />
       <DesktopNotifyProvider>
         <Toaster
           richColors

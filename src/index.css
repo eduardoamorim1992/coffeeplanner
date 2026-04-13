@@ -136,6 +136,157 @@
       0 0 0 1px hsl(var(--primary) / 0.35),
       0 4px 22px -6px hsl(var(--primary) / 0.35);
   }
+
+  /* Fundo interativo da tela de login */
+  .login-bg-orb-a {
+    width: min(88vw, 540px);
+    height: min(88vw, 540px);
+    left: -12%;
+    top: -18%;
+    animation: login-bg-drift-a 24s ease-in-out infinite;
+  }
+
+  .login-bg-orb-b {
+    width: min(70vw, 420px);
+    height: min(70vw, 420px);
+    right: -8%;
+    bottom: -12%;
+    animation: login-bg-drift-b 20s ease-in-out infinite;
+  }
+
+  .login-bg-orb-c {
+    width: min(55vw, 320px);
+    height: min(55vw, 320px);
+    left: 35%;
+    bottom: 5%;
+    animation: login-bg-drift-c 18s ease-in-out infinite;
+  }
+
+  /* Fumaça sobre a xícara (login) */
+  .login-smoke-stack {
+    pointer-events: none;
+    position: absolute;
+    left: 50%;
+    bottom: 58%;
+    z-index: 2;
+    display: flex;
+    width: 2.75rem;
+    height: 1.75rem;
+    align-items: flex-end;
+    justify-content: center;
+    transform: translateX(-50%);
+  }
+
+  .login-smoke {
+    position: absolute;
+    bottom: 0;
+    width: 0.65rem;
+    height: 1.35rem;
+    border-radius: 50%;
+    background: radial-gradient(
+      ellipse 80% 100% at 50% 100%,
+      hsl(220 15% 92% / 0.55),
+      hsl(220 20% 70% / 0.2) 45%,
+      transparent 72%
+    );
+    filter: blur(3px);
+    animation: login-smoke-rise 2.8s ease-in-out infinite;
+    mix-blend-mode: screen;
+  }
+
+  .login-smoke-a {
+    left: 18%;
+    animation-delay: 0s;
+    transform-origin: 50% 100%;
+  }
+
+  .login-smoke-b {
+    left: 42%;
+    width: 0.55rem;
+    height: 1.5rem;
+    animation-delay: 0.45s;
+    opacity: 0.9;
+    transform-origin: 50% 100%;
+  }
+
+  .login-smoke-c {
+    left: 62%;
+    width: 0.5rem;
+    height: 1.2rem;
+    animation-delay: 0.9s;
+    transform-origin: 50% 100%;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .login-bg-orb-a,
+    .login-bg-orb-b,
+    .login-bg-orb-c {
+      animation: none;
+    }
+    .login-mouse-follow {
+      opacity: 0.55;
+    }
+    .login-smoke {
+      animation: none;
+      opacity: 0.45;
+      transform: translateY(-4px);
+    }
+  }
+}
+
+@keyframes login-smoke-rise {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0) scaleX(1) scaleY(1);
+  }
+  40% {
+    opacity: 0.85;
+    transform: translateY(-7px) scaleX(1.15) scaleY(1.25);
+  }
+  70% {
+    opacity: 0.5;
+    transform: translateY(-12px) scaleX(0.95) scaleY(1.35);
+  }
+}
+
+@keyframes login-bg-drift-a {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  40% {
+    transform: translate(6%, 8%) scale(1.06);
+  }
+  70% {
+    transform: translate(-4%, 4%) scale(0.96);
+  }
+}
+
+@keyframes login-bg-drift-b {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  45% {
+    transform: translate(-7%, -5%) scale(1.05);
+  }
+  75% {
+    transform: translate(5%, -8%) scale(0.94);
+  }
+}
+
+@keyframes login-bg-drift-c {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(-6%, 10%) scale(1.08);
+  }
+  80% {
+    transform: translate(8%, -4%) scale(0.92);
+  }
 }
 
 /* Mobile: safe areas (notch / home indicator) */
