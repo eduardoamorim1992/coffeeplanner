@@ -2,6 +2,12 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { LoginMouseBackground } from "@/components/LoginMouseBackground";
+import {
+  SIGNUP_ROLE_OPTIONS,
+  isValidSignupRole,
+  type SignupRole,
+} from "@/constants/userRoles";
+import { cn } from "@/lib/utils";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -12,6 +18,7 @@ export default function Cadastro() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [categoria, setCategoria] = useState<SignupRole>("assistente");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -38,6 +45,10 @@ export default function Cadastro() {
       setMessage("A senha deve ter pelo menos 6 caracteres.");
       return;
     }
+    if (!isValidSignupRole(categoria)) {
+      setMessage("Escolha uma categoria válida.");
+      return;
+    }
 
     setLoading(true);
 
@@ -60,7 +71,7 @@ export default function Cadastro() {
       email: cleanEmail,
       password,
       options: {
-        data: { nome: cleanNome },
+        data: { nome: cleanNome, role: categoria },
       },
     });
 
@@ -80,7 +91,7 @@ export default function Cadastro() {
       id: uid,
       nome: cleanNome,
       email: cleanEmail,
-      role: "assistente",
+      role: categoria,
       aprovado: false,
       created_at: new Date().toISOString(),
       auth_id: uid,
@@ -126,6 +137,27 @@ export default function Cadastro() {
           autoComplete="name"
           className="w-full px-3 py-2 rounded-lg bg-muted/30 border border-border text-sm"
         />
+
+        <div className="space-y-2">
+          <p className="text-xs text-zinc-400">Sua categoria / função</p>
+          <div className="grid grid-cols-2 gap-2">
+            {SIGNUP_ROLE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setCategoria(opt.value)}
+                className={cn(
+                  "rounded-lg border px-2.5 py-2 text-left text-xs font-medium transition-colors",
+                  categoria === opt.value
+                    ? "border-primary bg-primary/25 text-white shadow-sm ring-1 ring-primary/40"
+                    : "border-border bg-muted/20 text-zinc-300 hover:border-zinc-500 hover:bg-muted/35"
+                )}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <input
           type="email"
