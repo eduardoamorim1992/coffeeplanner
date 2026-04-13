@@ -145,16 +145,29 @@ export default function AdminUsers() {
         }
       }
 
-      const { error: profileError } = await supabase.from("users").upsert(
-        {
-          id: signUpData.user.id,
-          nome: cleanNome,
-          email: cleanEmail,
-          role,
-          created_at: new Date().toISOString(),
-        },
-        { onConflict: "id" }
-      );
+      const uid = signUpData.user.id;
+      const adminRow: Record<string, unknown> = {
+        id: uid,
+        auth_id: uid,
+        nome: cleanNome,
+        email: cleanEmail,
+        role,
+        aprovado: true,
+        created_at: new Date().toISOString(),
+      };
+
+      let { error: profileError } = await supabase
+        .from("users")
+        .upsert(adminRow, { onConflict: "id" });
+
+      if (profileError) {
+        const fallback = { ...adminRow };
+        delete fallback.auth_id;
+        const r2 = await supabase
+          .from("users")
+          .upsert(fallback, { onConflict: "id" });
+        profileError = r2.error;
+      }
 
       if (profileError) {
         setErrorMessage(profileError.message || "Erro ao salvar dados do usuario");
@@ -174,6 +187,21 @@ export default function AdminUsers() {
     } finally {
       setLoading(false);
     }
+  }
+
+  async function approveUser(id: string) {
+    setErrorMessage("");
+    setSuccessMessage("");
+    const { error } = await supabase
+      .from("users")
+      .update({ aprovado: true })
+      .eq("id", id);
+    if (error) {
+      setErrorMessage(error.message || "Erro ao aprovar");
+      return;
+    }
+    setSuccessMessage("Usuário aprovado.");
+    loadData();
   }
 
   // 🔥 ALTERAR ROLE
@@ -226,6 +254,11 @@ export default function AdminUsers() {
     });
   }, [users, listSearch]);
 
+  const pendentesAprovacao = useMemo(
+    () => users.filter((u) => u.aprovado === false),
+    [users]
+  );
+
   return (
     <div className="p-6 text-white">
       <button onClick={() => navigate("/dashboard")}>
@@ -233,6 +266,38 @@ export default function AdminUsers() {
       </button>
 
       <h1 className="text-xl mb-6">⚙ Gerenciar Usuários</h1>
+
+      {pendentesAprovacao.length > 0 ? (
+        <div className="mb-8 rounded-xl border-2 border-amber-600/50 bg-amber-950/25 p-4">
+          <h2 className="text-lg font-semibold text-amber-200 mb-1">
+            Aprovar cadastros
+          </h2>
+          <p className="text-sm text-zinc-400 mb-4">
+            Estes usuários pediram acesso pelo formulário de cadastro. Aprove
+            para liberar o login.
+          </p>
+          <ul className="space-y-2">
+            {pendentesAprovacao.map((u) => (
+              <li
+                key={u.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-600 bg-zinc-900/80 px-3 py-2"
+              >
+                <div>
+                  <div className="font-medium text-white">{u.nome}</div>
+                  <div className="text-xs text-zinc-400">{u.email}</div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => approveUser(u.id)}
+                  className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
+                >
+                  Aprovar
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {/* FORM */}
       <div className="flex gap-2 mb-6">
@@ -323,7 +388,14 @@ export default function AdminUsers() {
             >
               {/* INFO */}
               <div>
-                <div className="font-medium">{u.nome}</div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="font-medium">{u.nome}</span>
+                  {u.aprovado === false ? (
+                    <span className="rounded bg-amber-900/80 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-amber-200">
+                      Pendente
+                    </span>
+                  ) : null}
+                </div>
                 <div className="text-xs text-zinc-400">
                   {u.email}
                 </div>

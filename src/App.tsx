@@ -1,3 +1,4 @@
+import { useEffect, useState, type ReactNode } from "react";
 import {
   BrowserRouter,
   Routes,
@@ -11,16 +12,76 @@ import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
 import DivisionPage from "@/pages/DivisionPage";
 import Dashboard from "@/components/Dashboard";
 import Login from "@/pages/Login";
+import Cadastro from "@/pages/Cadastro";
+import CadastroObrigado from "@/pages/CadastroObrigado";
+import AguardandoAprovacao from "@/pages/AguardandoAprovacao";
 import AdminUsers from "@/pages/AdminUsers";
 import AlterarSenha from "@/pages/AlterarSenha";
 import DefinirSenha from "@/pages/DefinirSenha";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { supabase } from "@/lib/supabase";
 
-// 🔥 PROTECTED ROUTE BASE (ÚNICO CONTROLE)
-function ProtectedRoute({ children }: any) {
-  const { user, loading } = useAuthUser();
+type Gate = "idle" | "loading" | "ok" | "pending" | "no_profile";
 
-  if (loading) {
+function ProtectedRoute({ children }: { children: ReactNode }) {
+  const { user, loading: authLoading } = useAuthUser();
+  const [gate, setGate] = useState<Gate>("idle");
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!user) {
+      setGate("idle");
+      return;
+    }
+
+    let cancelled = false;
+    setGate("loading");
+
+    (async () => {
+      const { data: byId, error: errId } = await supabase
+        .from("users")
+        .select("aprovado, role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (cancelled) return;
+
+      let row = byId;
+      if ((errId || !row) && user.email) {
+        const email = user.email.trim().toLowerCase();
+        const { data: byEmail, error: errEmail } = await supabase
+          .from("users")
+          .select("aprovado, role")
+          .eq("email", email)
+          .maybeSingle();
+        if (!cancelled && !errEmail && byEmail) {
+          row = byEmail;
+        }
+      }
+
+      if (!row) {
+        setGate("no_profile");
+        return;
+      }
+
+      const pendente =
+        row.aprovado === false && row.role !== "admin";
+
+      if (pendente) {
+        setGate("pending");
+        return;
+      }
+
+      setGate("ok");
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id, user?.email, authLoading]);
+
+  if (authLoading || (user && gate === "loading")) {
     return (
       <div className="h-screen flex items-center justify-center text-white">
         Carregando sessão...
@@ -32,7 +93,15 @@ function ProtectedRoute({ children }: any) {
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  if (gate === "pending") {
+    return <Navigate to="/aguardando-aprovacao" replace />;
+  }
+
+  if (gate === "no_profile") {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <>{children}</>;
 }
 
 export default function App() {
@@ -55,11 +124,12 @@ export default function App() {
         <PwaInstallPrompt />
         <Routes>
 
-        {/* LOGIN */}
         <Route path="/login" element={<Login />} />
+        <Route path="/cadastro" element={<Cadastro />} />
+        <Route path="/cadastro/obrigado" element={<CadastroObrigado />} />
+        <Route path="/aguardando-aprovacao" element={<AguardandoAprovacao />} />
         <Route path="/definir-senha" element={<DefinirSenha />} />
 
-        {/* DASHBOARD */}
         <Route
           path="/dashboard"
           element={
@@ -69,7 +139,6 @@ export default function App() {
           }
         />
 
-        {/* ADMIN */}
         <Route
           path="/admin/users"
           element={
@@ -79,7 +148,6 @@ export default function App() {
           }
         />
 
-        {/* ALTERAR SENHA */}
         <Route
           path="/alterar-senha"
           element={
@@ -89,7 +157,6 @@ export default function App() {
           }
         />
 
-        {/* 🔥 USER PAGE */}
         <Route
           path="/user/:userId"
           element={
@@ -99,7 +166,6 @@ export default function App() {
           }
         />
 
-        {/* FALLBACK */}
         <Route path="*" element={<Navigate to="/login" replace />} />
 
         </Routes>

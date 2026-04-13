@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { MailCheck, AlertCircle, Eye, EyeOff } from "lucide-react";
 
@@ -63,8 +63,10 @@ export default function Login() {
 
     setLoading(true);
 
+    const cleanEmail = email.trim().toLowerCase();
+
     const { data, error } = await supabase.auth.signInWithPassword({
-      email: email.trim(),
+      email: cleanEmail,
       password,
     });
 
@@ -86,19 +88,50 @@ export default function Login() {
       return;
     }
 
-    const { data: userData, error: userError } = await supabase
-      .from("users")
-      .select("*")
-      .eq("email", email.trim())
-      .single();
+    let userData: {
+      id: string;
+      aprovado?: boolean | null;
+      role?: string | null;
+    } | null = null;
 
-    if (userError || !userData) {
+    const byId = await supabase
+      .from("users")
+      .select("id, aprovado, role")
+      .eq("id", data.user.id)
+      .maybeSingle();
+
+    if (byId.data) {
+      userData = byId.data;
+    } else {
+      const byEmail = await supabase
+        .from("users")
+        .select("id, aprovado, role")
+        .eq("email", cleanEmail)
+        .maybeSingle();
+      userData = byEmail.data;
+    }
+
+    if (!userData) {
       setMessageKind("error");
       setMessage("Conta não encontrada. Entre em contato com o administrador.");
       setLoading(false);
       return;
     }
 
+    const pendente =
+      userData.aprovado === false && userData.role !== "admin";
+
+    if (pendente) {
+      await supabase.auth.signOut();
+      setMessageKind("error");
+      setMessage(
+        "Sua conta ainda aguarda aprovação do administrador. Você receberá acesso quando for liberada."
+      );
+      setLoading(false);
+      return;
+    }
+
+    setLoading(false);
     navigate(`/user/${userData.id}`);
   };
 
@@ -201,6 +234,13 @@ export default function Login() {
               ? `Aguarde ${cooldown}s para reenviar`
               : "Esqueci minha senha"}
         </button>
+
+        <Link
+          to="/cadastro"
+          className="block w-full text-center text-sm text-zinc-400 hover:text-white underline underline-offset-2"
+        >
+          Cadastrar novo usuário
+        </Link>
 
         {message ? (
           <div

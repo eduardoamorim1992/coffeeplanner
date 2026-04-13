@@ -1,6 +1,5 @@
 import { useParams } from "react-router-dom";
 import { MotivationalBar } from "@/components/MotivationalBar";
-import { MarketTicker } from "@/components/MarketTicker";
 import { AppHeader } from "@/components/AppHeader";
 import { QuickInsightCapture } from "@/components/QuickInsightCapture";
 import AppSidebar from "@/components/AppSidebar";
@@ -460,7 +459,6 @@ export default function DivisionPage() {
         <AppHeader divisionName={userName} />
 
         <main className="flex-1 min-h-0 space-y-2 overflow-y-auto overscroll-y-contain px-2 pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] pt-2 sm:space-y-3 sm:px-3 sm:pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:pt-3 md:space-y-4 md:p-6 md:pb-6">
-          <MarketTicker />
           <MotivationalBar />
 
           {/* Abas no desktop / tablet */}
