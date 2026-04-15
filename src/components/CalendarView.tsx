@@ -183,6 +183,7 @@ export function CalendarView({
             calendarData={calendarData}
             setCalendarData={setCalendarData}
             selectedDate={selectedDate}
+            setSelectedDate={setSelectedDate}
           />
         </div>
       )}

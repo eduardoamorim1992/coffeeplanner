@@ -1,4 +1,5 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { TutorialHelpButton } from "@/components/TutorialHelp";
 
 interface AppHeaderProps {
   divisionName: string;
@@ -37,6 +38,8 @@ export function AppHeader({ divisionName }: AppHeaderProps) {
             {userName}
           </span>
         </div>
+
+        <TutorialHelpButton collapsedLabel />
 
         <ThemeToggle />
 

@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { ChevronDown, UserPlus } from "lucide-react";
 
 const ROLES = [
   "assistente",
@@ -11,6 +12,84 @@ const ROLES = [
   "diretor",
   "admin",
 ];
+
+type ManagerOption = { id: string; nome: string };
+
+/** Menu escuro — evita select nativo (lista branca / baixo contraste no Windows). */
+function AddManagerMenu({
+  candidates,
+  onPick,
+}: {
+  candidates: ManagerOption[];
+  onPick: (managerId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (rootRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    };
+    document.addEventListener("mousedown", close);
+    return () => document.removeEventListener("mousedown", close);
+  }, [open]);
+
+  return (
+    <div
+      ref={rootRef}
+      className="relative ml-auto w-full max-w-[min(100%,14rem)]"
+    >
+      <button
+        type="button"
+        aria-expanded={open}
+        aria-haspopup="listbox"
+        onClick={() => setOpen((v) => !v)}
+        className="flex h-10 w-full cursor-pointer items-center rounded-xl border-0 bg-gradient-to-br from-muted/80 to-muted/40 py-2 pl-9 pr-9 text-left text-xs font-semibold text-foreground shadow-sm ring-1 ring-border/70 transition hover:from-muted hover:to-muted/60 hover:ring-primary/35 focus:outline-none focus:ring-2 focus:ring-primary/45"
+      >
+        <span className="truncate">Adicionar gestor</span>
+      </button>
+      <UserPlus
+        className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-primary"
+        aria-hidden
+      />
+      <ChevronDown
+        className={`pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition ${open ? "rotate-180" : ""}`}
+        aria-hidden
+      />
+
+      {open ? (
+        <ul
+          role="listbox"
+          className="absolute right-0 z-50 mt-1 max-h-52 min-w-full overflow-auto rounded-xl border border-border bg-zinc-950 py-1 shadow-xl shadow-black/40 ring-1 ring-white/10"
+        >
+          {candidates.length === 0 ? (
+            <li className="px-3 py-2 text-xs text-zinc-500">
+              Nenhum gestor disponível
+            </li>
+          ) : (
+            candidates.map((m) => (
+              <li key={m.id}>
+                <button
+                  type="button"
+                  role="option"
+                  className="w-full px-3 py-2 text-left text-sm text-zinc-100 transition hover:bg-zinc-800 active:bg-zinc-800/80"
+                  onClick={() => {
+                    onPick(m.id);
+                    setOpen(false);
+                  }}
+                >
+                  {m.nome}
+                </button>
+              </li>
+            ))
+          )}
+        </ul>
+      ) : null}
+    </div>
+  );
+}
 
 export default function AdminUsers() {
   const navigate = useNavigate();
@@ -189,18 +268,48 @@ export default function AdminUsers() {
     }
   }
 
-  async function approveUser(id: string) {
+  async function approveUser(user: { id: string; email?: string | null; nome?: string | null }) {
     setErrorMessage("");
     setSuccessMessage("");
     const { error } = await supabase
       .from("users")
       .update({ aprovado: true })
-      .eq("id", id);
+      .eq("id", user.id);
     if (error) {
       setErrorMessage(error.message || "Erro ao aprovar");
       return;
     }
-    setSuccessMessage("Usuário aprovado.");
+
+    const email = String(user.email || "").trim().toLowerCase();
+    const nome = String(user.nome || "").trim();
+    let notifyError = "";
+    if (email) {
+      try {
+        const notifyRes = await fetch("/api/notify-user-approved", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, nome }),
+        });
+        if (!notifyRes.ok) {
+          const payload = await notifyRes
+            .json()
+            .catch(() => null as { error?: string } | null);
+          notifyError =
+            payload?.error || "Usuário aprovado, mas falhou ao enviar e-mail.";
+        }
+      } catch {
+        notifyError = "Usuário aprovado, mas houve erro de conexão ao enviar e-mail.";
+      }
+    } else {
+      notifyError = "Usuário aprovado, mas sem e-mail válido para notificação.";
+    }
+
+    if (notifyError) {
+      setErrorMessage(notifyError);
+      setSuccessMessage("Usuário aprovado.");
+    } else {
+      setSuccessMessage("Usuário aprovado e notificado por e-mail.");
+    }
     loadData();
   }
 
@@ -260,19 +369,23 @@ export default function AdminUsers() {
   );
 
   return (
-    <div className="p-6 text-white">
-      <button onClick={() => navigate("/dashboard")}>
+    <div className="dark min-h-[100dvh] w-full bg-background p-6 text-foreground">
+      <button
+        type="button"
+        onClick={() => navigate("/dashboard")}
+        className="text-foreground hover:text-primary hover:underline"
+      >
         ← Voltar
       </button>
 
-      <h1 className="text-xl mb-6">⚙ Gerenciar Usuários</h1>
+      <h1 className="mb-6 text-xl font-semibold">⚙ Gerenciar Usuários</h1>
 
       {pendentesAprovacao.length > 0 ? (
         <div className="mb-8 rounded-xl border-2 border-amber-600/50 bg-amber-950/25 p-4">
           <h2 className="text-lg font-semibold text-amber-200 mb-1">
             Aprovar cadastros
           </h2>
-          <p className="text-sm text-zinc-400 mb-4">
+          <p className="mb-4 text-sm text-muted-foreground">
             Estes usuários pediram acesso pelo formulário de cadastro. Aprove
             para liberar o login.
           </p>
@@ -280,15 +393,15 @@ export default function AdminUsers() {
             {pendentesAprovacao.map((u) => (
               <li
                 key={u.id}
-                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-zinc-600 bg-zinc-900/80 px-3 py-2"
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border bg-card/80 px-3 py-2"
               >
                 <div>
-                  <div className="font-medium text-white">{u.nome}</div>
+                  <div className="font-medium text-foreground">{u.nome}</div>
                   <div className="text-xs text-zinc-400">{u.email}</div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => approveUser(u.id)}
+                  onClick={() => approveUser(u)}
                   className="shrink-0 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500"
                 >
                   Aprovar
@@ -305,14 +418,14 @@ export default function AdminUsers() {
           placeholder="Nome"
           value={nome}
           onChange={(e) => setNome(e.target.value)}
-          className="px-3 py-2 rounded bg-zinc-800 w-56"
+          className="w-56 rounded border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
         />
 
         <input
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="px-3 py-2 rounded bg-zinc-800 w-64"
+          className="w-64 rounded border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
         />
 
         <input
@@ -320,13 +433,13 @@ export default function AdminUsers() {
           placeholder="Senha"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="px-3 py-2 rounded bg-zinc-800 w-52"
+          className="w-52 rounded border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
         />
 
         <select
           value={role}
           onChange={(e) => setRole(e.target.value)}
-          className="px-3 py-2 rounded bg-zinc-800"
+          className="rounded border border-border bg-muted/40 px-3 py-2 text-sm text-foreground"
         >
           {ROLES.map((r) => (
             <option key={r}>{r}</option>
@@ -334,9 +447,10 @@ export default function AdminUsers() {
         </select>
 
         <button
+          type="button"
           onClick={handleCreateUser}
           disabled={loading}
-          className="bg-red-600 px-4 py-2 rounded disabled:opacity-50"
+          className="rounded bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"
         >
           {loading ? "Criando..." : "Cadastrar"}
         </button>
@@ -355,7 +469,7 @@ export default function AdminUsers() {
       ) : null}
 
       <div className="mb-4 max-w-xl">
-        <label htmlFor="admin-users-search" className="mb-1 block text-sm text-zinc-400">
+        <label htmlFor="admin-users-search" className="mb-1 block text-sm text-muted-foreground">
           Buscar na lista
         </label>
         <input
@@ -365,10 +479,10 @@ export default function AdminUsers() {
           value={listSearch}
           onChange={(e) => setListSearch(e.target.value)}
           autoComplete="off"
-          className="w-full rounded border border-zinc-600 bg-zinc-800 px-3 py-2 text-sm text-white placeholder:text-zinc-500 focus:border-red-500 focus:outline-none focus:ring-1 focus:ring-red-500"
+          className="w-full rounded border border-border bg-muted/40 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
         {listSearch.trim() ? (
-          <p className="mt-1.5 text-xs text-zinc-500">
+          <p className="mt-1.5 text-xs text-muted-foreground">
             {filteredUsers.length === 0
               ? "Nenhum usuário encontrado."
               : `Exibindo ${filteredUsers.length} de ${users.length} usuário${users.length === 1 ? "" : "s"}.`}
@@ -384,7 +498,7 @@ export default function AdminUsers() {
           return (
             <div
               key={u.id}
-              className="border border-zinc-700 p-4 rounded flex justify-between"
+              className="flex justify-between rounded border border-border bg-card/50 p-4"
             >
               {/* INFO */}
               <div>
@@ -396,7 +510,7 @@ export default function AdminUsers() {
                     </span>
                   ) : null}
                 </div>
-                <div className="text-xs text-zinc-400">
+                <div className="text-xs text-muted-foreground">
                   {u.email}
                 </div>
               </div>
@@ -410,7 +524,7 @@ export default function AdminUsers() {
                   onChange={(e) =>
                     updateRole(u.id, e.target.value)
                   }
-                  className="bg-zinc-800 px-2 py-1 rounded"
+                  className="rounded border border-border bg-muted/40 px-2 py-1 text-sm text-foreground"
                 >
                   {ROLES.map((r) => (
                     <option key={r}>{r}</option>
@@ -427,7 +541,7 @@ export default function AdminUsers() {
                     return (
                       <div
                         key={mId}
-                        className="bg-zinc-700 px-2 py-1 rounded flex items-center gap-2"
+                        className="flex items-center gap-2 rounded border border-border bg-muted px-2 py-1 text-sm"
                       >
                         {manager?.nome || "?"}
 
@@ -444,31 +558,20 @@ export default function AdminUsers() {
                   })}
                 </div>
 
-                {/* ADICIONAR GESTOR */}
-                <select
-                  onChange={(e) => {
-                    if (e.target.value) {
-                      addManager(u.id, e.target.value);
-                    }
-                  }}
-                  className="bg-zinc-800 px-2 py-1 rounded"
-                >
-                  <option value="">+ Adicionar gestor</option>
-
-                  {users
+                {/* ADICIONAR GESTOR — menu custom (lista nativa do select fica clara no Windows) */}
+                <AddManagerMenu
+                  candidates={users
                     .filter(
                       (x) =>
-                        x.role === "diretor" ||
-                        x.role === "coordenador" ||
-                        x.role === "supervisor" ||
-                        x.role === "gerente"
+                        (x.role === "diretor" ||
+                          x.role === "coordenador" ||
+                          x.role === "supervisor" ||
+                          x.role === "gerente") &&
+                        !managersIds.includes(x.id)
                     )
-                    .map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.nome}
-                      </option>
-                    ))}
-                </select>
+                    .map((x) => ({ id: x.id, nome: x.nome }))}
+                  onPick={(managerId) => void addManager(u.id, managerId)}
+                />
 
               </div>
             </div>

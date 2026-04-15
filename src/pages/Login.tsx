@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { LoginMouseBackground } from "@/components/LoginMouseBackground";
 import { LoginBrandMark } from "@/components/LoginBrandMark";
+import { LoginTutorialLink } from "@/components/TutorialHelp";
 import { MailCheck, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -245,6 +246,8 @@ export default function Login() {
         >
           Cadastrar novo usuário
         </Link>
+
+        <LoginTutorialLink />
 
         {message ? (
           <div

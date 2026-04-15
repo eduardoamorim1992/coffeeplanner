@@ -5,6 +5,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { QuickInsightCapture } from "@/components/QuickInsightCapture";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { fetchApprovedShareTargetIds } from "@/lib/activityShares";
 
 import {
   LineChart,
@@ -139,12 +140,23 @@ export default function Dashboard() {
             ? `Olá, ${meData.nome}. Ainda não há colaboradores vinculados a você como gestor — exibindo apenas suas atividades. Peça ao admin para associar sua equipe em "Gerenciar Usuários".`
             : `Olá, ${meData.nome}. Indicadores de você e da sua equipe (${subordinates.length} colaborador${subordinates.length === 1 ? "" : "es"}).`
         );
-        setTeamSize(allowedUserIds.length);
       } else {
         allowedUserIds = [meData.id];
         setScopeTitle("Seu desempenho");
         setScopeDetail(`Dados apenas das suas atividades, ${meData.nome}.`);
-        setTeamSize(1);
+      }
+
+      if (allowedUserIds !== null) {
+        const sharedIds = await fetchApprovedShareTargetIds(meData.id);
+        allowedUserIds = [...new Set([...allowedUserIds, ...sharedIds])];
+        if (sharedIds.length > 0) {
+          setScopeDetail((prev) =>
+            prev.includes("compartilh")
+              ? prev
+              : `${prev} Inclui atividades de colaboradores que autorizaram você a visualizar.`
+          );
+        }
+        setTeamSize(allowedUserIds.length);
       }
 
       let query = supabase

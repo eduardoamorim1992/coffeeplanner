@@ -17,6 +17,7 @@ import Cadastro from "@/pages/Cadastro";
 import CadastroObrigado from "@/pages/CadastroObrigado";
 import AguardandoAprovacao from "@/pages/AguardandoAprovacao";
 import AdminUsers from "@/pages/AdminUsers";
+import CompartilhamentoAtividades from "@/pages/CompartilhamentoAtividades";
 import AlterarSenha from "@/pages/AlterarSenha";
 import DefinirSenha from "@/pages/DefinirSenha";
 import { useAuthUser } from "@/hooks/useAuthUser";
@@ -84,8 +85,8 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
 
   if (authLoading || (user && gate === "loading")) {
     return (
-      <div className="h-screen flex items-center justify-center text-white">
-        Carregando sessão...
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 text-foreground">
+        <p className="text-sm text-muted-foreground">Carregando sessão…</p>
       </div>
     );
   }
@@ -155,6 +156,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <AlterarSenha />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/compartilhamentos"
+          element={
+            <ProtectedRoute>
+              <CompartilhamentoAtividades />
             </ProtectedRoute>
           }
         />

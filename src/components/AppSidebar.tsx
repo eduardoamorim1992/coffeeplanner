@@ -13,7 +13,9 @@ import {
   User,
   KeyRound,
   CalendarCheck,
+  Share2,
 } from "lucide-react";
+import { fetchApprovedShareTargetIds } from "@/lib/activityShares";
 
 // Hierarquia de cargos — cima = maior nível, baixo = menor nível
 const ROLE_HIERARCHY = [
@@ -120,6 +122,7 @@ export default function AppSidebar() {
   const [me, setMe] = useState<any>(null);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
+  const [pendingShareCount, setPendingShareCount] = useState(0);
 
   const userGroups = useMemo(() => groupUsersByRole(users), [users]);
 
@@ -157,6 +160,15 @@ export default function AppSidebar() {
 
     const role = String(meData.role || "").toLowerCase().trim();
 
+    const sharedIds = await fetchApprovedShareTargetIds(meData.id);
+
+    const { count: pendingIn, error: pendingErr } = await supabase
+      .from("activity_share_requests")
+      .select("*", { count: "exact", head: true })
+      .eq("target_id", meData.id)
+      .eq("status", "pending");
+    setPendingShareCount(!pendingErr ? (pendingIn ?? 0) : 0);
+
     // 🔥 ADMIN → TODOS (inclui created_at e ultimo_pagamento para monitorar pagamentos)
     if (role === "admin") {
       const { data } = await supabase
@@ -179,7 +191,13 @@ export default function AppSidebar() {
         .select("user_id")
         .eq("manager_id", meData.id);
 
-      const ids = [meData.id, ...(relations?.map((r) => r.user_id) || [])];
+      const ids = [
+        ...new Set([
+          meData.id,
+          ...(relations?.map((r) => r.user_id) || []),
+          ...sharedIds,
+        ]),
+      ];
 
       const { data } = await supabase
         .from("users")
@@ -190,9 +208,19 @@ export default function AppSidebar() {
       setUsers(data || []);
     }
 
-    // 🔥 USUÁRIO NORMAL
+    // 🔥 USUÁRIO NORMAL (+ quem autorizou ver atividades)
     else {
-      setUsers([meData]);
+      const ids = [...new Set([meData.id, ...sharedIds])];
+      if (ids.length <= 1) {
+        setUsers([meData]);
+      } else {
+        const { data } = await supabase
+          .from("users")
+          .select("id, nome, role")
+          .in("id", ids)
+          .order("nome");
+        setUsers(data ?? [meData]);
+      }
     }
   }
 
@@ -516,6 +544,32 @@ export default function AppSidebar() {
               </button>
             </>
           )}
+
+          <button
+            type="button"
+            onClick={() => {
+              navigate("/compartilhamentos");
+              setIsMobileOpen(false);
+            }}
+            title={
+              collapsed
+                ? "Compartilhar atividades"
+                : "Pedir acesso às atividades de um colega"
+            }
+            className={`${footerBtnClasses("default")} relative`}
+          >
+            <Share2 size={collapsed ? 20 : 18} />
+            {!collapsed && "Compartilhamentos"}
+            {pendingShareCount > 0 ? (
+              <span
+                className={`absolute flex h-[17px] min-w-[17px] items-center justify-center rounded-full border-2 border-sidebar bg-amber-600 px-0.5 text-[9px] font-bold text-white ${
+                  collapsed ? "-right-0.5 -top-0.5" : "right-0.5 top-0.5"
+                }`}
+              >
+                {pendingShareCount > 99 ? "99+" : pendingShareCount}
+              </span>
+            ) : null}
+          </button>
 
           <button
             type="button"

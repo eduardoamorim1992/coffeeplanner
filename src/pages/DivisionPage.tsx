@@ -7,6 +7,7 @@ import { CalendarView } from "@/components/CalendarView";
 import { DashboardChart } from "@/components/DashboardChart";
 import { OKRPanel } from "@/components/OKRPanel";
 import { supabase } from "@/lib/supabase";
+import { fetchApprovedShareTargetIds } from "@/lib/activityShares";
 import {
   fetchIcsTextFromUrl,
   filterEventsWithinDays,
@@ -135,6 +136,12 @@ export default function DivisionPage() {
     // 🔥 NORMAL
     else {
       allowedUserIds = [meData.id];
+    }
+
+    // Quem aprovou compartilhamento de atividades com você
+    if (role !== "admin") {
+      const sharedIds = await fetchApprovedShareTargetIds(meData.id);
+      allowedUserIds = [...new Set([...allowedUserIds, ...sharedIds])];
     }
 
     let finalUserIds = allowedUserIds;

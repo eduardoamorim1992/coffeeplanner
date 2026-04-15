@@ -58,7 +58,7 @@ export default function Cadastro() {
     const { data: dup } = await supabase
       .from("users")
       .select("id")
-      .eq("email", cleanEmail)
+      .ilike("email", cleanEmail)
       .maybeSingle();
 
     if (dup) {
@@ -78,7 +78,22 @@ export default function Cadastro() {
     if (signUpError || !signUpData.user) {
       const msg = signUpError?.message ?? "Não foi possível criar a conta.";
       if (msg.toLowerCase().includes("already registered")) {
-        setMessage("Este email já está cadastrado. Tente fazer login.");
+        // Conta já existe no Auth (mesmo que não apareça em public.users): enviar recuperação ajuda a retomar acesso.
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(
+          cleanEmail,
+          {
+            redirectTo: `${window.location.origin}/definir-senha`,
+          }
+        );
+        if (resetError) {
+          setMessage(
+            "Este email já existe no login. Use \"Esqueci minha senha\" na tela de login para recuperar o acesso."
+          );
+        } else {
+          setMessage(
+            "Encontramos cadastro anterior deste email no login. Enviamos um link para redefinir a senha e continuar o acesso."
+          );
+        }
       } else {
         setMessage(msg);
       }

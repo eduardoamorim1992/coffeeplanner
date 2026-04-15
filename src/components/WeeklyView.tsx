@@ -1,7 +1,8 @@
 import { WeekCard } from "./WeekCard";
 import { ReplicateTaskDialog } from "./ReplicateTaskDialog";
 import { supabase } from "@/lib/supabase";
-import { useRef, useState } from "react";
+import { useRef, useState, type Dispatch, type SetStateAction } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
   sortDayTasks,
   toggleCalendarDayTask,
@@ -30,12 +31,14 @@ interface Props {
     React.SetStateAction<Record<string, CalendarTask[]>>
   >;
   selectedDate: string;
+  setSelectedDate: Dispatch<SetStateAction<string>>;
 }
 
 export function WeeklyView({
   calendarData,
   setCalendarData,
   selectedDate,
+  setSelectedDate,
 }: Props) {
   const [replicateTarget, setReplicateTarget] = useState<{
     task: CalendarTask;
@@ -85,6 +88,12 @@ export function WeeklyView({
       }),
       tasks: sortDayTasks(calendarData[iso] || []),
     });
+  }
+
+  function shiftWeek(dayDelta: number) {
+    const d = parseLocalDate(selectedDate);
+    d.setDate(d.getDate() + dayDelta);
+    setSelectedDate(formatDateLocal(d));
   }
 
   function normalizePriority(p: string) {
@@ -340,6 +349,33 @@ export function WeeklyView({
           }}
         />
       ) : null}
+
+      <div className="mb-2 flex items-center justify-between gap-2 px-0.5 sm:mb-3">
+        <button
+          type="button"
+          aria-label="Semana anterior"
+          onClick={() => shiftWeek(-7)}
+          className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground transition hover:bg-primary/20 sm:min-h-[44px] sm:min-w-[44px] sm:rounded-xl"
+        >
+          <ChevronLeft className="h-5 w-5" aria-hidden />
+        </button>
+
+        <p className="min-w-0 flex-1 px-1 text-center text-[11px] font-semibold leading-tight text-foreground sm:text-sm">
+          <span className="text-muted-foreground">Semana: </span>
+          <span className="tabular-nums">
+            {week[0].displayDate} – {week[6].displayDate}
+          </span>
+        </p>
+
+        <button
+          type="button"
+          aria-label="Próxima semana"
+          onClick={() => shiftWeek(7)}
+          className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground transition hover:bg-primary/20 sm:min-h-[44px] sm:min-w-[44px] sm:rounded-xl"
+        >
+          <ChevronRight className="h-5 w-5" aria-hidden />
+        </button>
+      </div>
 
       <div className="grid w-full min-w-0 grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2 lg:grid-cols-7 lg:gap-3 [&>*]:min-w-0">
         {week.map((day, i) => (
