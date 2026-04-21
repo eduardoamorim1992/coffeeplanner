@@ -6,6 +6,7 @@ import {
   Repeat,
   Pencil,
 } from "lucide-react";
+import { ActionButton } from "@/components/ui/ActionButton";
 
 interface WeekCardProps {
   day: {
@@ -233,8 +234,7 @@ export function WeekCard({
             <option value="baixa">Baixa prioridade</option>
           </select>
 
-          <button
-            type="button"
+          <ActionButton
             onClick={() => {
 
               if (!newTask.trim()) return;
@@ -245,10 +245,11 @@ export function WeekCard({
               setTaskTime("");
 
             }}
-            className="min-h-[40px] sm:min-h-0 text-[11px] sm:text-[11px] px-3 py-2 sm:px-2 sm:py-0.5 rounded-lg sm:rounded bg-primary text-white hover:opacity-90 active:scale-[0.98] transition w-full sm:w-auto font-medium"
+            variant="primary"
+            className="w-full sm:min-h-0 sm:w-auto sm:rounded sm:px-2 sm:py-0.5 sm:text-[11px]"
           >
             Adicionar
-          </button>
+          </ActionButton>
 
         </div>
 

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import type { CalendarTask } from "@/lib/calendarDayTasks";
+import { ActionButton } from "@/components/ui/ActionButton";
 
 function parseLocalDate(dateString: string) {
   const [year, month, day] = dateString.split("-").map(Number);
@@ -224,21 +225,23 @@ export function ReplicateTaskDialog({
         </div>
 
         <div className="flex gap-2 border-t border-border bg-muted/30 px-5 py-4 dark:border-zinc-800/90 dark:bg-zinc-950/80">
-          <button
-            type="button"
+          <ActionButton
             onClick={onClose}
-            className="min-h-[48px] flex-1 rounded-xl border border-border bg-background text-sm font-medium text-foreground transition hover:bg-muted active:scale-[0.99] dark:border-zinc-700/80 dark:bg-zinc-900/50 dark:text-zinc-300 dark:hover:bg-zinc-800/80"
+            variant="secondary"
+            size="md"
+            className="flex-1"
           >
             Cancelar
-          </button>
-          <button
-            type="button"
+          </ActionButton>
+          <ActionButton
             disabled={selected.size === 0}
             onClick={() => onConfirm(selected)}
-            className="min-h-[48px] flex-1 rounded-xl bg-gradient-to-r from-primary to-red-600 text-sm font-semibold text-primary-foreground shadow-md transition hover:opacity-95 active:scale-[0.99] disabled:pointer-events-none disabled:opacity-45 dark:shadow-lg dark:shadow-red-900/25"
+            variant="primary"
+            size="md"
+            className="flex-1"
           >
             Replicar
-          </button>
+          </ActionButton>
         </div>
       </div>
     </div>

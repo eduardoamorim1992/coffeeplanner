@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useNavigate } from "react-router-dom";
+import { ActionButton } from "@/components/ui/ActionButton";
 
 export default function AlterarSenha() {
   const [password, setPassword] = useState("");
@@ -53,12 +54,14 @@ export default function AlterarSenha() {
           className="w-full px-3 py-2 rounded bg-muted/30 border border-border text-sm"
         />
 
-        <button
+        <ActionButton
           onClick={alterarSenha}
-          className="w-full bg-primary text-white py-2 rounded text-sm"
+          variant="primary"
+          size="md"
+          className="w-full"
         >
           Alterar senha
-        </button>
+        </ActionButton>
 
       </div>
     </div>

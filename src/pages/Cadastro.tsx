@@ -7,6 +7,7 @@ import {
   isValidSignupRole,
   type SignupRole,
 } from "@/constants/userRoles";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { cn } from "@/lib/utils";
 import { AlertCircle, Eye, EyeOff } from "lucide-react";
 
@@ -203,14 +204,15 @@ export default function Cadastro() {
           </button>
         </div>
 
-        <button
-          type="button"
+        <ActionButton
           onClick={handleCadastrar}
           disabled={loading}
-          className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium disabled:opacity-60"
+          variant="primary"
+          size="md"
+          className="w-full"
         >
           {loading ? "Enviando..." : "Cadastrar"}
-        </button>
+        </ActionButton>
 
         <Link
           to="/login"

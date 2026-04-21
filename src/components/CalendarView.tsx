@@ -1,6 +1,7 @@
 import { MonthlyView } from "@/components/MonthlyView";
 import { WeeklyView } from "@/components/WeeklyView";
 import { MiniDayTaskList } from "@/components/MiniDayTaskList";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -83,11 +84,11 @@ export function CalendarView({
 
         <div className="flex w-full flex-col gap-1.5 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end sm:gap-2">
           {canReplicate && (
-            <button
-              type="button"
+            <ActionButton
               onClick={() => onReplicateMonth(viewYear, viewMonth)}
               disabled={loadingReplicate}
-              className="min-h-[40px] w-full rounded-lg bg-sky-600 px-3 py-2 text-xs font-medium text-white shadow-sm transition hover:bg-sky-700 active:scale-[0.98] disabled:opacity-60 sm:min-h-[44px] sm:w-auto sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm dark:bg-blue-600 dark:hover:bg-blue-700"
+              variant="primary"
+              className="w-full sm:w-auto"
             >
               {loadingReplicate ? (
                 "Copiando..."
@@ -97,17 +98,17 @@ export function CalendarView({
                   <span className="hidden sm:inline">🔁 Replicar p/ próximo mês</span>
                 </>
               )}
-            </button>
+            </ActionButton>
           )}
           {onSyncIcs && onIcsUrlChange ? (
-            <button
-              type="button"
+            <ActionButton
               onClick={() => setIcsPanelOpen((v) => !v)}
               aria-expanded={icsPanelOpen}
-              className={`min-h-[40px] w-full rounded-lg border px-3 py-2 text-xs font-medium transition active:scale-[0.98] sm:min-h-[44px] sm:w-auto sm:rounded-xl sm:px-4 sm:py-2.5 sm:text-sm ${
+              variant={icsPanelOpen ? "accent" : "secondary"}
+              className={`w-full sm:w-auto ${
                 icsPanelOpen
-                  ? "border-teal-600/50 bg-teal-50 text-teal-900 dark:border-teal-500/50 dark:bg-teal-950/80 dark:text-teal-100"
-                  : "border-border bg-muted/50 text-foreground hover:bg-muted dark:border-zinc-700/80 dark:bg-zinc-900/70 dark:text-zinc-200 dark:hover:bg-zinc-800/90"
+                  ? "ring-1 ring-teal-400/40"
+                  : ""
               }`}
             >
               <span className="sm:hidden">
@@ -116,7 +117,7 @@ export function CalendarView({
               <span className="hidden sm:inline">
                 {icsPanelOpen ? "▼ Fechar importação ICS" : "🔗 Importar calendário (ICS)"}
               </span>
-            </button>
+            </ActionButton>
           ) : null}
         </div>
       </div>
@@ -142,14 +143,15 @@ export function CalendarView({
               onChange={(e) => onIcsUrlChange(e.target.value)}
               className="flex-1 min-h-[44px] px-3 py-2.5 rounded-xl bg-muted/30 border border-border text-sm"
             />
-            <button
-              type="button"
+            <ActionButton
               onClick={onSyncIcs}
               disabled={syncingIcs || !icsUrl.trim()}
-              className="min-h-[44px] shrink-0 px-4 py-2.5 rounded-xl bg-teal-600 text-white text-sm font-medium hover:bg-teal-500 disabled:opacity-50 active:scale-[0.98] transition"
+              variant="accent"
+              size="md"
+              className="shrink-0"
             >
               {syncingIcs ? "Importando..." : "↻ Sincronizar agora"}
-            </button>
+            </ActionButton>
           </div>
         </div>
       ) : null}

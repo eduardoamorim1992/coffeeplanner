@@ -4,6 +4,7 @@ import { supabase } from "@/lib/supabase";
 import { LoginMouseBackground } from "@/components/LoginMouseBackground";
 import { LoginBrandMark } from "@/components/LoginBrandMark";
 import { LoginTutorialLink } from "@/components/TutorialHelp";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { MailCheck, AlertCircle, Eye, EyeOff } from "lucide-react";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -218,14 +219,15 @@ export default function Login() {
           </button>
         </div>
 
-        <button
-          type="button"
+        <ActionButton
           onClick={handleLogin}
           disabled={loading}
-          className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium disabled:opacity-60"
+          variant="primary"
+          size="md"
+          className="w-full"
         >
           {loading ? "Entrando..." : "Entrar"}
-        </button>
+        </ActionButton>
 
         <button
           type="button"

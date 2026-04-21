@@ -1,5 +1,6 @@
 import { WeekCard } from "./WeekCard";
 import { ReplicateTaskDialog } from "./ReplicateTaskDialog";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { supabase } from "@/lib/supabase";
 import { useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -351,14 +352,14 @@ export function WeeklyView({
       ) : null}
 
       <div className="mb-2 flex items-center justify-between gap-2 px-0.5 sm:mb-3">
-        <button
-          type="button"
+        <ActionButton
           aria-label="Semana anterior"
           onClick={() => shiftWeek(-7)}
-          className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground transition hover:bg-primary/20 sm:min-h-[44px] sm:min-w-[44px] sm:rounded-xl"
+          variant="secondary"
+          className="min-w-10 px-0 sm:min-w-[44px]"
         >
           <ChevronLeft className="h-5 w-5" aria-hidden />
-        </button>
+        </ActionButton>
 
         <p className="min-w-0 flex-1 px-1 text-center text-[11px] font-semibold leading-tight text-foreground sm:text-sm">
           <span className="text-muted-foreground">Semana: </span>
@@ -367,14 +368,14 @@ export function WeeklyView({
           </span>
         </p>
 
-        <button
-          type="button"
+        <ActionButton
           aria-label="Próxima semana"
           onClick={() => shiftWeek(7)}
-          className="flex min-h-10 min-w-10 shrink-0 items-center justify-center rounded-lg bg-muted text-foreground transition hover:bg-primary/20 sm:min-h-[44px] sm:min-w-[44px] sm:rounded-xl"
+          variant="secondary"
+          className="min-w-10 px-0 sm:min-w-[44px]"
         >
           <ChevronRight className="h-5 w-5" aria-hidden />
-        </button>
+        </ActionButton>
       </div>
 
       <div className="grid w-full min-w-0 grid-cols-1 gap-1.5 sm:grid-cols-2 sm:gap-2 lg:grid-cols-7 lg:gap-3 [&>*]:min-w-0">

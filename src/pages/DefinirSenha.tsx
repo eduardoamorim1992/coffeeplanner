@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { Eye, EyeOff, AlertCircle } from "lucide-react";
 import { LoginMouseBackground } from "@/components/LoginMouseBackground";
+import { ActionButton } from "@/components/ui/ActionButton";
 
 /**
  * Processa o retorno do email de recuperação (PKCE, magic link com hash ou token_hash na query).
@@ -197,13 +198,14 @@ export default function DefinirSenha() {
         ) : null}
 
         {message && !sessionReady ? (
-          <button
-            type="button"
+          <ActionButton
             onClick={() => navigate("/login")}
-            className="w-full rounded-lg border border-border py-2 text-sm hover:bg-muted"
+            variant="secondary"
+            size="md"
+            className="w-full"
           >
             Voltar ao login
-          </button>
+          </ActionButton>
         ) : null}
 
         {sessionReady ? (
@@ -253,14 +255,15 @@ export default function DefinirSenha() {
               </button>
             </div>
 
-            <button
-              type="button"
+            <ActionButton
               onClick={salvar}
               disabled={loading}
-              className="w-full rounded-lg bg-primary py-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
+              variant="primary"
+              size="md"
+              className="w-full"
             >
               {loading ? "Salvando..." : "Salvar nova senha"}
-            </button>
+            </ActionButton>
           </>
         ) : null}
       </div>

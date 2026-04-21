@@ -6,6 +6,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { ActionButton } from "@/components/ui/ActionButton";
 import {
   BookOpen,
   CalendarDays,
@@ -262,15 +263,15 @@ export function TutorialHelpButton({
 
   return (
     <>
-      <button
-        type="button"
+      <ActionButton
         onClick={() => setOpen(true)}
         title="Como usar o sistema"
-        className={`inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-muted/50 px-2.5 py-1.5 text-xs font-medium text-foreground transition hover:bg-muted sm:px-3 sm:text-sm ${className}`}
+        variant="secondary"
+        icon={<BookOpen className="h-4 w-4 text-primary" aria-hidden />}
+        className={className}
       >
-        <BookOpen className="h-4 w-4 shrink-0 text-primary" aria-hidden />
         <span className={collapsedLabel ? "hidden sm:inline" : ""}>Tutorial</span>
-      </button>
+      </ActionButton>
       {open ? <TutorialModal onClose={() => setOpen(false)} /> : null}
     </>
   );
