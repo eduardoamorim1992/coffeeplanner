@@ -14,6 +14,7 @@ import {
   parseIcsText,
 } from "@/lib/icsSync";
 import { useEffect, useRef, useState } from "react";
+import { BarChart3, CalendarDays, Target } from "lucide-react";
 
 // 🔥 FORMATAR DATA
 function formatDateLocal(date: Date) {
@@ -473,23 +474,26 @@ export default function DivisionPage() {
             <button
               type="button"
               onClick={() => setView("calendar")}
-              className={tabDesktop(view === "calendar")}
+              className={`${tabDesktop(view === "calendar")} inline-flex items-center gap-2`}
             >
-              📅 Calendário
+              <CalendarDays className="h-4 w-4 shrink-0 opacity-95" aria-hidden />
+              Calendário
             </button>
             <button
               type="button"
               onClick={() => setView("chart")}
-              className={tabDesktop(view === "chart")}
+              className={`${tabDesktop(view === "chart")} inline-flex items-center gap-2`}
             >
-              📊 Ver Gráfico
+              <BarChart3 className="h-4 w-4 shrink-0 opacity-95" aria-hidden />
+              Ver Gráfico
             </button>
             <button
               type="button"
               onClick={() => setView("okr")}
-              className={tabDesktop(view === "okr")}
+              className={`${tabDesktop(view === "okr")} inline-flex items-center gap-2`}
             >
-              🎯 OKR
+              <Target className="h-4 w-4 shrink-0 opacity-95" aria-hidden />
+              OKR
             </button>
           </div>
 
@@ -536,7 +540,7 @@ export default function DivisionPage() {
               onClick={() => setView("calendar")}
               className={`${tabMobile(view === "calendar")} flex flex-col items-center justify-center gap-px py-1.5 sm:gap-0.5 sm:py-2`}
             >
-              <span className="text-base leading-none sm:text-lg">📅</span>
+              <CalendarDays className="h-[1.1rem] w-[1.1rem] shrink-0 sm:h-5 sm:w-5" aria-hidden />
               <span>Calendário</span>
             </button>
             <button
@@ -544,7 +548,7 @@ export default function DivisionPage() {
               onClick={() => setView("chart")}
               className={`${tabMobile(view === "chart")} flex flex-col items-center justify-center gap-px py-1.5 sm:gap-0.5 sm:py-2`}
             >
-              <span className="text-base leading-none sm:text-lg">📊</span>
+              <BarChart3 className="h-[1.1rem] w-[1.1rem] shrink-0 sm:h-5 sm:w-5" aria-hidden />
               <span>Gráfico</span>
             </button>
             <button
@@ -552,7 +556,7 @@ export default function DivisionPage() {
               onClick={() => setView("okr")}
               className={`${tabMobile(view === "okr")} flex flex-col items-center justify-center gap-px py-1.5 sm:gap-0.5 sm:py-2`}
             >
-              <span className="text-base leading-none sm:text-lg">🎯</span>
+              <Target className="h-[1.1rem] w-[1.1rem] shrink-0 sm:h-5 sm:w-5" aria-hidden />
               <span>OKR</span>
             </button>
           </div>

@@ -20,6 +20,7 @@ import AdminUsers from "@/pages/AdminUsers";
 import CompartilhamentoAtividades from "@/pages/CompartilhamentoAtividades";
 import AlterarSenha from "@/pages/AlterarSenha";
 import DefinirSenha from "@/pages/DefinirSenha";
+import WebGpuLiquidDemo from "@/pages/WebGpuLiquidDemo";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import { supabase } from "@/lib/supabase";
 
@@ -174,6 +175,15 @@ export default function App() {
           element={
             <ProtectedRoute>
               <DivisionPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/demo/webgpu-liquid"
+          element={
+            <ProtectedRoute>
+              <WebGpuLiquidDemo />
             </ProtectedRoute>
           }
         />

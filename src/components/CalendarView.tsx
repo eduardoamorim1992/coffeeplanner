@@ -2,6 +2,14 @@ import { MonthlyView } from "@/components/MonthlyView";
 import { WeeklyView } from "@/components/WeeklyView";
 import { MiniDayTaskList } from "@/components/MiniDayTaskList";
 import { ActionButton } from "@/components/ui/ActionButton";
+import {
+  CalendarDays,
+  CalendarRange,
+  Link2,
+  Loader2,
+  RefreshCw,
+  X,
+} from "lucide-react";
 import { useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
@@ -61,24 +69,26 @@ export function CalendarView({
           <button
             type="button"
             onClick={() => setCalendarMode("month")}
-            className={`min-h-[40px] flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:min-h-[44px] sm:flex-none sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm ${
+            className={`flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:min-h-[44px] sm:flex-none sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm ${
               calendarMode === "month"
                 ? "bg-gradient-to-r from-primary to-red-500 text-primary-foreground shadow-md ring-1 ring-primary/25 dark:shadow-[0_10px_24px_-12px_rgba(239,68,68,0.7)] dark:ring-red-300/30"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
             }`}
           >
-            📅 Mensal
+            <CalendarDays className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
+            Mensal
           </button>
           <button
             type="button"
             onClick={() => setCalendarMode("week")}
-            className={`min-h-[40px] flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:min-h-[44px] sm:flex-none sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm ${
+            className={`flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:min-h-[44px] sm:flex-none sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm ${
               calendarMode === "week"
                 ? "bg-gradient-to-r from-primary to-red-500 text-primary-foreground shadow-md ring-1 ring-primary/25 dark:shadow-[0_10px_24px_-12px_rgba(239,68,68,0.7)] dark:ring-red-300/30"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
             }`}
           >
-            📆 Semana
+            <CalendarRange className="h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" aria-hidden />
+            Semana
           </button>
         </div>
 
@@ -89,13 +99,20 @@ export function CalendarView({
               disabled={loadingReplicate}
               variant="primary"
               className="w-full sm:w-auto"
+              icon={
+                loadingReplicate ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <RefreshCw className="h-4 w-4" aria-hidden />
+                )
+              }
             >
               {loadingReplicate ? (
                 "Copiando..."
               ) : (
                 <>
-                  <span className="sm:hidden">🔁 Próximo mês</span>
-                  <span className="hidden sm:inline">🔁 Replicar p/ próximo mês</span>
+                  <span className="sm:hidden">Próximo mês</span>
+                  <span className="hidden sm:inline">Replicar p/ próximo mês</span>
                 </>
               )}
             </ActionButton>
@@ -105,17 +122,22 @@ export function CalendarView({
               onClick={() => setIcsPanelOpen((v) => !v)}
               aria-expanded={icsPanelOpen}
               variant={icsPanelOpen ? "accent" : "secondary"}
-              className={`w-full sm:w-auto ${
-                icsPanelOpen
-                  ? "ring-1 ring-teal-400/40"
-                  : ""
-              }`}
+              className="w-full sm:w-auto"
+              icon={
+                icsPanelOpen ? (
+                  <X className="h-4 w-4" aria-hidden />
+                ) : (
+                  <Link2 className="h-4 w-4" aria-hidden />
+                )
+              }
             >
               <span className="sm:hidden">
-                {icsPanelOpen ? "▼ Fechar ICS" : "🔗 ICS"}
+                {icsPanelOpen ? "Fechar ICS" : "ICS"}
               </span>
               <span className="hidden sm:inline">
-                {icsPanelOpen ? "▼ Fechar importação ICS" : "🔗 Importar calendário (ICS)"}
+                {icsPanelOpen
+                  ? "Fechar importação ICS"
+                  : "Importar calendário (ICS)"}
               </span>
             </ActionButton>
           ) : null}
@@ -149,8 +171,15 @@ export function CalendarView({
               variant="accent"
               size="md"
               className="shrink-0"
+              icon={
+                syncingIcs ? (
+                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+                ) : (
+                  <RefreshCw className="h-4 w-4" aria-hidden />
+                )
+              }
             >
-              {syncingIcs ? "Importando..." : "↻ Sincronizar agora"}
+              {syncingIcs ? "Importando..." : "Sincronizar agora"}
             </ActionButton>
           </div>
         </div>

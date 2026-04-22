@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { CalendarDays, Target } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
 interface OKRItem {
@@ -274,7 +275,10 @@ export function OKRPanel({ viewedUserId, viewedUserName }: OKRPanelProps = {}) {
 
       {canEdit ? (
       <div className="space-y-2 rounded-lg border border-border bg-card p-2.5 sm:space-y-3 sm:rounded-xl sm:p-3 md:p-4">
-        <h3 className="text-sm font-semibold sm:text-base md:text-lg">🎯 Planejamento de OKRs</h3>
+        <h3 className="flex items-center gap-2 text-sm font-semibold sm:text-base md:text-lg">
+          <Target className="h-4 w-4 shrink-0 text-primary sm:h-5 sm:w-5" aria-hidden />
+          Planejamento de OKRs
+        </h3>
 
         <input
           value={objective}
@@ -386,7 +390,10 @@ export function OKRPanel({ viewedUserId, viewedUserName }: OKRPanelProps = {}) {
                           : "text-muted-foreground"
                     }`}
                   >
-                    📅 Meta até{" "}
+                    <span className="inline-flex items-center gap-1">
+                      <CalendarDays className="h-3.5 w-3.5 shrink-0 opacity-80" aria-hidden />
+                      Meta até{" "}
+                    </span>
                     <span className="tabular-nums">
                       {formatTargetDateBR(okr.targetDate)}
                     </span>

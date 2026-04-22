@@ -267,7 +267,7 @@ export function TutorialHelpButton({
         onClick={() => setOpen(true)}
         title="Como usar o sistema"
         variant="secondary"
-        icon={<BookOpen className="h-4 w-4 text-primary" aria-hidden />}
+        icon={<BookOpen className="h-4 w-4 text-white/95" aria-hidden />}
         className={className}
       >
         <span className={collapsedLabel ? "hidden sm:inline" : ""}>Tutorial</span>
