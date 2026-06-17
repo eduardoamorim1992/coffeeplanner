@@ -57,13 +57,13 @@ export function CalendarView({
   return (
     <div className="space-y-2 transition-all duration-300 sm:space-y-3 md:space-y-4">
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
-        <div className="flex w-full gap-1 rounded-xl border border-border bg-card/90 p-1 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-[0_8px_24px_-18px_rgba(0,0,0,0.8)] sm:w-auto sm:gap-1.5 sm:rounded-2xl sm:p-1.5">
+        <div className="flex w-full gap-1 rounded-xl border border-border bg-card/90 p-1 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_10px_26px_-16px_rgba(0,0,0,0.35)] dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_30px_-18px_rgba(0,0,0,0.8)] sm:w-auto sm:gap-1.5 sm:rounded-2xl sm:p-1.5">
           <button
             type="button"
             onClick={() => setCalendarMode("month")}
             className={`flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:min-h-[44px] sm:flex-none sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm ${
               calendarMode === "month"
-                ? "bg-gradient-to-r from-primary to-red-500 text-primary-foreground shadow-md ring-1 ring-primary/25 dark:shadow-[0_10px_24px_-12px_rgba(239,68,68,0.7)] dark:ring-red-300/30"
+                ? "border-transparent text-white bg-gradient-to-b from-red-400 via-red-500 to-red-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-10px_16px_rgba(127,29,29,0.55),0_0_0_1px_rgba(248,113,113,0.35),0_0_24px_1px_rgba(239,68,68,0.6),0_6px_18px_-6px_rgba(0,0,0,0.55)]"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
             }`}
           >
@@ -75,7 +75,7 @@ export function CalendarView({
             onClick={() => setCalendarMode("week")}
             className={`flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:min-h-[44px] sm:flex-none sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm ${
               calendarMode === "week"
-                ? "bg-gradient-to-r from-primary to-red-500 text-primary-foreground shadow-md ring-1 ring-primary/25 dark:shadow-[0_10px_24px_-12px_rgba(239,68,68,0.7)] dark:ring-red-300/30"
+                ? "border-transparent text-white bg-gradient-to-b from-red-400 via-red-500 to-red-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-10px_16px_rgba(127,29,29,0.55),0_0_0_1px_rgba(248,113,113,0.35),0_0_24px_1px_rgba(239,68,68,0.6),0_6px_18px_-6px_rgba(0,0,0,0.55)]"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
             }`}
           >

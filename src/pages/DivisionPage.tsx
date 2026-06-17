@@ -337,7 +337,7 @@ export default function DivisionPage() {
 
   const tabActive = (active: boolean) =>
     active
-      ? "border-primary/30 bg-gradient-to-r from-primary to-red-500 text-primary-foreground shadow-md ring-1 ring-primary/20 dark:border-red-400/80 dark:shadow-[0_10px_30px_-14px_rgba(239,68,68,0.75)] dark:ring-red-300/30"
+      ? "border-transparent text-white bg-gradient-to-b from-red-400 via-red-500 to-red-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-10px_16px_rgba(127,29,29,0.55),0_0_0_1px_rgba(248,113,113,0.35),0_0_24px_1px_rgba(239,68,68,0.6),0_6px_18px_-6px_rgba(0,0,0,0.55)]"
       : "border-border bg-card/90 text-foreground backdrop-blur-sm hover:border-primary/20 hover:bg-muted/80 dark:border-zinc-700/80 dark:bg-zinc-900/70 dark:text-zinc-200 dark:hover:border-zinc-500/80 dark:hover:bg-zinc-800/80";
 
   const tabDesktop = (active: boolean) =>
@@ -357,7 +357,7 @@ export default function DivisionPage() {
           <MotivationalBar />
 
           {/* Abas no desktop / tablet */}
-          <div className="hidden md:flex flex-wrap gap-3 rounded-2xl border border-border bg-card/70 p-2 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-none">
+          <div className="hidden md:flex flex-wrap gap-3 rounded-2xl border border-border bg-card/70 p-2 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_12px_30px_-16px_rgba(0,0,0,0.35)] dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_14px_34px_-18px_rgba(0,0,0,0.8)]">
             <button
               type="button"
               onClick={() => setView("calendar")}

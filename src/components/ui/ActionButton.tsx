@@ -13,7 +13,7 @@ type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 /** Um só contorno: hairline interno + sombra — sem border CSS (evita “dupla moldura”). */
 const variantClass: Record<ActionButtonVariant, string> = {
   primary:
-    "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.22),inset_0_-12px_20px_rgba(127,29,29,0.35),0_4px_14px_-4px_rgba(0,0,0,0.45),0_0_20px_-6px_rgba(239,68,68,0.25)]",
+    "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.28),inset_0_-12px_20px_rgba(127,29,29,0.4),0_4px_14px_-4px_rgba(0,0,0,0.45),0_0_26px_-1px_rgba(239,68,68,0.5)]",
   secondary:
     "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-10px_18px_rgba(0,0,0,0.35),0_4px_14px_-4px_rgba(0,0,0,0.5)]",
   accent:
