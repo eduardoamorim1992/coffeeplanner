@@ -18,7 +18,7 @@ import {
   Sparkles,
   Repeat,
   RefreshCw,
-  Link2,
+  CalendarCheck2,
   Lightbulb,
 } from "lucide-react";
 
@@ -171,21 +171,22 @@ export function TutorialModal({ onClose }: { onClose: () => void }) {
             </p>
           </Section>
 
-          <Section icon={Link2} title="Importar calendário (ICS)">
+          <Section icon={CalendarCheck2} title="Conectar o Outlook (agenda automática)">
             <p>
-              Toque em <strong className="text-foreground">Importar calendário (ICS)</strong>,{" "}
-              cole o <strong className="text-foreground">link de assinatura</strong>{" "}
-              do Outlook, Google ou outro serviço que publique um arquivo{" "}
-              <strong className="text-foreground">.ics</strong>. O endereço fica
-              salvo neste navegador.
+              No calendário, toque em{" "}
+              <strong className="text-foreground">Conectar Outlook</strong>, faça
+              login na sua conta da Microsoft e autorize. É preciso fazer isso{" "}
+              <strong className="text-foreground">uma única vez</strong>.
             </p>
             <p>
-              Use <strong className="text-foreground">Sincronizar agora</strong>{" "}
-              para buscar os próximos eventos e criar atividades no seu
-              planejamento. Elas aparecem com o prefixo{" "}
-              <strong className="text-foreground">[ICS]</strong> no título, para
-              distinguir do que você cadastrou manualmente. Também só está
-              disponível no <strong className="text-foreground">seu calendário</strong>.
+              A partir daí, seus compromissos da agenda do Outlook entram{" "}
+              <strong className="text-foreground">automaticamente</strong> como
+              atividades (próximos 90 dias), com o prefixo{" "}
+              <strong className="text-foreground">[Outlook]</strong> no título.
+              Depois de conectado, o botão vira{" "}
+              <strong className="text-foreground">Sincronizar Outlook</strong> para
+              buscar novidades quando quiser. Disponível só no{" "}
+              <strong className="text-foreground">seu calendário</strong>.
             </p>
           </Section>
 
