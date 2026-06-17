@@ -217,6 +217,46 @@
     transform-origin: 50% 100%;
   }
 
+  /* Card de login: entrada, inclinação 3D e brilho de vidro deslizante */
+  .login-card-enter {
+    animation: login-card-in 0.85s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .login-card-tilt {
+    transform: rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+    transform-style: preserve-3d;
+    transition: transform 0.2s ease-out;
+    will-change: transform;
+  }
+
+  .login-card-shine {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    border-radius: inherit;
+    pointer-events: none;
+    background: linear-gradient(
+      115deg,
+      transparent 30%,
+      hsl(0 0% 100% / 0.16) 45%,
+      hsl(0 0% 100% / 0.32) 50%,
+      hsl(0 0% 100% / 0.16) 55%,
+      transparent 70%
+    );
+    transform: translateX(-130%);
+    animation: login-card-shine 5s ease-in-out 0.9s infinite;
+  }
+
+  .login-particle {
+    position: absolute;
+    border-radius: 9999px;
+    pointer-events: none;
+    opacity: 0;
+    box-shadow: 0 0 9px 0 currentColor;
+    animation: login-particle-float var(--dur, 16s) ease-in-out
+      var(--delay, 0s) infinite;
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .login-bg-orb-a,
     .login-bg-orb-b,
@@ -230,6 +270,18 @@
       animation: none;
       opacity: 0.45;
       transform: translateY(-4px);
+    }
+    .login-card-enter,
+    .login-card-shine,
+    .login-particle {
+      animation: none;
+    }
+    .login-card-shine,
+    .login-particle {
+      opacity: 0;
+    }
+    .login-card-tilt {
+      transition: none;
     }
   }
 }
@@ -286,6 +338,46 @@
   }
   80% {
     transform: translate(8%, -4%) scale(0.92);
+  }
+}
+
+@keyframes login-card-in {
+  from {
+    opacity: 0;
+    transform: translateY(42px) scale(0.9);
+    filter: blur(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes login-card-shine {
+  0% {
+    transform: translateX(-130%);
+  }
+  22%,
+  100% {
+    transform: translateX(130%);
+  }
+}
+
+@keyframes login-particle-float {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.6);
+  }
+  12% {
+    opacity: var(--op, 0.5);
+  }
+  80% {
+    opacity: var(--op, 0.5);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-130px) scale(1.05);
   }
 }
 

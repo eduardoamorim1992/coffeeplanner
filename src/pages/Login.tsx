@@ -3,6 +3,7 @@ import { useNavigate, useLocation, Link } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { LoginMouseBackground } from "@/components/LoginMouseBackground";
 import { LoginBrandMark } from "@/components/LoginBrandMark";
+import { LoginCardFx } from "@/components/LoginCardFx";
 import { LoginTutorialLink } from "@/components/TutorialHelp";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { MailCheck, AlertCircle, Eye, EyeOff } from "lucide-react";
@@ -185,7 +186,7 @@ export default function Login() {
     <div className="dark relative min-h-screen flex min-h-[100dvh] w-full items-center justify-center overflow-hidden px-4">
       <LoginMouseBackground />
       <LoginBrandMark />
-      <div className="glass-card relative z-10 p-8 w-full max-w-sm space-y-4">
+      <LoginCardFx>
         <h2 className="text-lg font-semibold text-center text-foreground">
           Login
         </h2>
@@ -275,7 +276,7 @@ export default function Login() {
           Na recuperação, use o mesmo email cadastrado. Se não receber em alguns
           minutos, verifique o spam.
         </p>
-      </div>
+      </LoginCardFx>
     </div>
   );
 }
