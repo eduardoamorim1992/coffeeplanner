@@ -24,7 +24,7 @@ Em **Vercel → Project → Settings → Environment Variables**, adicione:
 | Variável | Valor |
 |---|---|
 | `MS_CLIENT_ID` | `d05ca323-5d2b-4be4-85d6-e6bb3589522a` |
-| `MS_TENANT_ID` | `e2c7697c-ee69-4708-9955-53f7fbca5e49` |
+| `MS_TENANT_ID` | `common` |
 | `MS_CLIENT_SECRET` | *(o "Valor" do segredo criado no Azure)* |
 | `MS_REDIRECT_URI` | `https://coffeplanner.online/api/outlook/callback` |
 | `APP_BASE_URL` | `https://coffeplanner.online` |
@@ -33,6 +33,7 @@ Em **Vercel → Project → Settings → Environment Variables**, adicione:
 > `OUTLOOK_STATE_SECRET` é opcional — se não definir, o backend reutiliza a service role key.
 
 ### 3. Conferir o registro no Azure (Microsoft Entra ID → App: CoffePlanner)
+- **Tipos de conta com suporte:** "Qualquer diretório organizacional e contas pessoais da Microsoft" — permite login com conta pessoal (@outlook/@hotmail) sem depender da TI da organização.
 - **URI de redirecionamento (Web):** `https://coffeplanner.online/api/outlook/callback`
 - **Permissões de API (Microsoft Graph, delegadas):** `Calendars.Read`, `offline_access`
 - **Segredo do cliente:** criado em *Certificados e segredos* (anote a data de expiração).
@@ -50,4 +51,4 @@ Após `git push`, a Vercel publica as funções em `api/outlook/*`.
 ## Observações de segurança
 - O `refresh_token` fica só no servidor (tabela com RLS, acessível apenas pela service role).
 - O `state` do OAuth é assinado (HMAC) para evitar CSRF.
-- O login é restrito ao tenant da empresa (`MS_TENANT_ID`).
+- O login aceita contas pessoais e de qualquer organização (`MS_TENANT_ID=common`); cada usuário autoriza o acesso somente à própria agenda.
