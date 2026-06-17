@@ -1,5 +1,5 @@
-import { requireUser } from "../_lib/auth";
-import { getSupabaseAdmin } from "../_lib/supabaseAdmin";
+import { requireUser } from "../_lib/auth.js";
+import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
 
 /**
  * POST /api/outlook/disconnect

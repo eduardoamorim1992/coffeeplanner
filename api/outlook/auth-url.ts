@@ -1,5 +1,5 @@
-import { requireUser, signState } from "../_lib/auth";
-import { buildAuthorizeUrl } from "../_lib/msGraph";
+import { requireUser, signState } from "../_lib/auth.js";
+import { buildAuthorizeUrl } from "../_lib/msGraph.js";
 
 /**
  * GET /api/outlook/auth-url

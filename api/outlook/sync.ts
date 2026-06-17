@@ -1,6 +1,6 @@
-import { requireUser } from "../_lib/auth";
-import { getSupabaseAdmin } from "../_lib/supabaseAdmin";
-import { fetchCalendarEvents, refreshTokens } from "../_lib/msGraph";
+import { requireUser } from "../_lib/auth.js";
+import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
+import { fetchCalendarEvents, refreshTokens } from "../_lib/msGraph.js";
 
 /**
  * POST /api/outlook/sync

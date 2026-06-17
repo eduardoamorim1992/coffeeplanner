@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { getSupabaseAdmin } from "./supabaseAdmin";
+import { getSupabaseAdmin } from "./supabaseAdmin.js";
 
 export type AppUser = {
   authId: string;

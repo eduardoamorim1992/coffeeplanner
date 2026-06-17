@@ -1,6 +1,6 @@
-import { verifyState } from "../_lib/auth";
-import { exchangeCodeForTokens } from "../_lib/msGraph";
-import { getSupabaseAdmin } from "../_lib/supabaseAdmin";
+import { verifyState } from "../_lib/auth.js";
+import { exchangeCodeForTokens } from "../_lib/msGraph.js";
+import { getSupabaseAdmin } from "../_lib/supabaseAdmin.js";
 
 /**
  * GET /api/outlook/callback
