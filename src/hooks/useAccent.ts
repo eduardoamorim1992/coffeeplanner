@@ -6,16 +6,18 @@ export type AccentId =
   | "emerald"
   | "violet"
   | "amber"
-  | "graphite";
+  | "graphite"
+  | "pink";
 
 /** Temas de cor disponíveis (o swatch é só a bolinha de prévia no seletor). */
 export const ACCENTS: { id: AccentId; label: string; swatch: string }[] = [
-  { id: "crimson", label: "Vermelho", swatch: "hsl(0 72% 51%)" },
+  { id: "crimson", label: "Vermelho", swatch: "hsl(0 78% 55%)" },
   { id: "ocean", label: "Azul", swatch: "hsl(213 90% 56%)" },
   { id: "emerald", label: "Verde", swatch: "hsl(155 72% 43%)" },
   { id: "violet", label: "Roxo", swatch: "hsl(260 82% 64%)" },
   { id: "amber", label: "Âmbar", swatch: "hsl(33 92% 52%)" },
   { id: "graphite", label: "Grafite", swatch: "hsl(220 12% 58%)" },
+  { id: "pink", label: "Rosa", swatch: "hsl(330 82% 64%)" },
 ];
 
 const STORAGE_KEY = "accent";

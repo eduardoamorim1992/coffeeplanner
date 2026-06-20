@@ -110,8 +110,21 @@
 
   /* ========================= */
   /* 🎨 TEMAS DE COR (accent)  */
-  /* O padrão (crimson) usa os valores acima. Cada tema só troca a cor primária. */
+  /* Cada tema só troca a cor primária (claro e escuro). */
   /* ========================= */
+  [data-accent="crimson"] {
+    --primary: 350 72% 44%;
+    --ring: 350 72% 44%;
+    --sidebar-primary: 350 72% 44%;
+    --sidebar-ring: 350 72% 44%;
+  }
+  .dark[data-accent="crimson"] {
+    --primary: 0 72% 51%;
+    --ring: 0 72% 51%;
+    --sidebar-primary: 0 72% 51%;
+    --sidebar-ring: 0 72% 51%;
+  }
+
   [data-accent="ocean"] {
     --primary: 214 84% 46%;
     --ring: 214 84% 46%;
@@ -175,6 +188,19 @@
     --ring: 220 12% 60%;
     --sidebar-primary: 220 12% 60%;
     --sidebar-ring: 220 12% 60%;
+  }
+
+  [data-accent="pink"] {
+    --primary: 330 75% 48%;
+    --ring: 330 75% 48%;
+    --sidebar-primary: 330 75% 48%;
+    --sidebar-ring: 330 75% 48%;
+  }
+  .dark[data-accent="pink"] {
+    --primary: 330 82% 64%;
+    --ring: 330 82% 64%;
+    --sidebar-primary: 330 82% 64%;
+    --sidebar-ring: 330 82% 64%;
   }
 
   html {
