@@ -1,5 +1,6 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { AccentThemePicker } from "@/components/AccentThemePicker";
+import { ReminderBell } from "@/components/ReminderBell";
 import { TutorialHelpButton } from "@/components/TutorialHelp";
 
 interface AppHeaderProps {
@@ -18,6 +19,7 @@ export function AppHeader({ divisionName }: AppHeaderProps) {
       {/* DIREITA */}
       <div className="flex shrink-0 items-center gap-1.5 sm:gap-3 md:gap-4">
         <TutorialHelpButton collapsedLabel />
+        <ReminderBell />
         <AccentThemePicker />
         <ThemeToggle />
       </div>

@@ -10,6 +10,7 @@ import { Toaster } from "sonner";
 import { DesktopNotifyProvider } from "@/contexts/DesktopNotifyContext";
 import { AuthHtmlChrome } from "@/components/AuthHtmlChrome";
 import { PwaInstallPrompt } from "@/components/PwaInstallPrompt";
+import { TaskReminders } from "@/components/TaskReminders";
 import DivisionPage from "@/pages/DivisionPage";
 import Dashboard from "@/components/Dashboard";
 import Login from "@/pages/Login";
@@ -126,6 +127,7 @@ export default function App() {
           }}
         />
         <PwaInstallPrompt />
+        <TaskReminders />
         <Routes>
 
         <Route path="/login" element={<Login />} />
