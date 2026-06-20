@@ -1,5 +1,6 @@
 import { useParams } from "react-router-dom";
 import { MotivationalBar } from "@/components/MotivationalBar";
+import { StreakCard } from "@/components/StreakCard";
 import { AppHeader } from "@/components/AppHeader";
 import { QuickInsightCapture } from "@/components/QuickInsightCapture";
 import AppSidebar from "@/components/AppSidebar";
@@ -355,6 +356,10 @@ export default function DivisionPage() {
 
         <main className="flex-1 min-h-0 space-y-2 overflow-y-auto overscroll-y-contain px-2 pb-[calc(4.25rem+env(safe-area-inset-bottom,0px))] pt-2 sm:space-y-3 sm:px-3 sm:pb-[calc(5rem+env(safe-area-inset-bottom,0px))] sm:pt-3 md:space-y-4 md:p-6 md:pb-6">
           <MotivationalBar />
+
+          {(!userId || userId === me?.id) && me?.id ? (
+            <StreakCard userId={me.id} />
+          ) : null}
 
           {/* Abas no desktop / tablet */}
           <div className="hidden md:flex w-fit flex-wrap gap-2 rounded-2xl border border-border bg-card/70 p-1.5 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_12px_30px_-16px_rgba(0,0,0,0.35)] dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_14px_34px_-18px_rgba(0,0,0,0.8)]">
