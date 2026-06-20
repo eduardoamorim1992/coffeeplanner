@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
 import { getHolidayName } from "@/lib/holidays";
+import { useUserRegion } from "@/hooks/useUserRegion";
 import {
   sortDayTasks,
   toggleCalendarDayTask,
@@ -65,7 +66,8 @@ export function MiniDayTaskList({
   const tasks = sortDayTasks(calendarData[isoDate] || []);
   const done = tasks.filter((t) => t.completed).length;
   const total = tasks.length;
-  const holiday = getHolidayName(isoDate);
+  const { uf } = useUserRegion();
+  const holiday = getHolidayName(isoDate, uf);
 
   async function onToggle(taskId: string) {
     if (busyId) return;

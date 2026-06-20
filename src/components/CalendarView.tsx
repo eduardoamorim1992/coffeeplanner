@@ -2,6 +2,7 @@ import { MonthlyView } from "@/components/MonthlyView";
 import { WeeklyView } from "@/components/WeeklyView";
 import { MiniDayTaskList } from "@/components/MiniDayTaskList";
 import { ActionButton } from "@/components/ui/ActionButton";
+import { RegionPicker } from "@/components/RegionPicker";
 import {
   CalendarDays,
   CalendarRange,
@@ -85,6 +86,7 @@ export function CalendarView({
         </div>
 
         <div className="flex w-full flex-col gap-1.5 sm:w-auto sm:flex-row sm:flex-wrap sm:justify-end sm:gap-2">
+          <RegionPicker />
           {canReplicate && (
             <ActionButton
               onClick={() => onReplicateMonth(viewYear, viewMonth)}

@@ -7,6 +7,8 @@ import {
   Pencil,
 } from "lucide-react";
 import { ActionButton } from "@/components/ui/ActionButton";
+import { getHolidayName } from "@/lib/holidays";
+import { useUserRegion } from "@/hooks/useUserRegion";
 
 interface WeekCardProps {
   day: {
@@ -44,6 +46,9 @@ export function WeekCard({
   const [priority, setPriority] =
     useState<"alta" | "media" | "baixa">("media");
 
+  const { uf } = useUserRegion();
+  const holiday = getHolidayName(day.date, uf);
+
   const completedCount = day.tasks.filter(
     (t) => t.completed
   ).length;
@@ -70,21 +75,38 @@ export function WeekCard({
   return (
     <div
       className={`glass-card flex flex-col w-full min-w-0 flex-1 transition-all duration-300 ${
-        isToday ? "border-primary/50 glow-red" : ""
+        isToday
+          ? "border-primary/50 glow-red"
+          : holiday
+            ? "border-amber-500/50"
+            : ""
       }`}
       style={{ animationDelay: `${index * 60}ms` }}
     >
 
       {/* HEADER */}
       <div className="flex items-center justify-between border-b border-border/50 px-2.5 py-1.5 sm:px-4 sm:py-2">
-        <div>
-          <p className="text-xs font-semibold capitalize">
+        <div className="min-w-0">
+          <p
+            className={`text-xs font-semibold capitalize ${
+              holiday ? "text-amber-600 dark:text-amber-400" : ""
+            }`}
+          >
             {day.dayName}
           </p>
 
           <p className="text-[10px] text-muted-foreground font-mono">
             {day.displayDate}
           </p>
+
+          {holiday && (
+            <p
+              className="mt-0.5 truncate text-[10px] font-semibold text-amber-600 dark:text-amber-400"
+              title={holiday}
+            >
+              {holiday}
+            </p>
+          )}
         </div>
 
         {totalCount > 0 && (
