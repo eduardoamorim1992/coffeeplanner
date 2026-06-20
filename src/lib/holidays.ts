@@ -61,45 +61,9 @@ function holidaysForYear(year: number): Record<string, string> {
   return map;
 }
 
-/**
- * Principais feriados estaduais (datas fixas MM-DD), por UF.
- * Cobertura dos estados mais comuns — outros podem ser adicionados sob demanda.
- */
-const STATE_HOLIDAYS: Record<string, { md: string; name: string }[]> = {
-  AC: [{ md: "06-15", name: "Aniversário do Acre" }],
-  AL: [{ md: "09-16", name: "Emancipação de Alagoas" }],
-  AM: [{ md: "09-05", name: "Elevação do Amazonas a província" }],
-  BA: [{ md: "07-02", name: "Independência da Bahia" }],
-  CE: [{ md: "03-25", name: "Data Magna do Ceará" }],
-  DF: [{ md: "11-30", name: "Dia do Evangélico" }],
-  MA: [{ md: "07-28", name: "Adesão do Maranhão à Independência" }],
-  MS: [{ md: "10-11", name: "Criação de Mato Grosso do Sul" }],
-  PA: [{ md: "08-15", name: "Adesão do Grão-Pará à Independência" }],
-  PE: [{ md: "03-06", name: "Revolução Pernambucana" }],
-  PI: [{ md: "10-19", name: "Dia do Piauí" }],
-  PR: [{ md: "12-19", name: "Emancipação do Paraná" }],
-  RJ: [{ md: "04-23", name: "São Jorge" }],
-  RO: [{ md: "01-04", name: "Criação de Rondônia" }],
-  RS: [{ md: "09-20", name: "Revolução Farroupilha" }],
-  SE: [{ md: "07-08", name: "Emancipação de Sergipe" }],
-  SP: [{ md: "07-09", name: "Revolução Constitucionalista" }],
-};
-
-/**
- * Nome do feriado para a data (YYYY-MM-DD): nacional sempre; se `uf` for
- * informado, também os feriados daquele estado. Retorna null se não houver.
- */
-export function getHolidayName(isoDate: string, uf?: string): string | null {
+/** Nome do feriado nacional para a data (YYYY-MM-DD), ou null se não houver. */
+export function getHolidayName(isoDate: string): string | null {
   const year = Number(isoDate.slice(0, 4));
   if (!year) return null;
-
-  const national = holidaysForYear(year)[isoDate];
-  if (national) return national;
-
-  if (uf) {
-    const md = isoDate.slice(5);
-    const found = STATE_HOLIDAYS[uf]?.find((h) => h.md === md);
-    if (found) return found.name;
-  }
-  return null;
+  return holidaysForYear(year)[isoDate] ?? null;
 }

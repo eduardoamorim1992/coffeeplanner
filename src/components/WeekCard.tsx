@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { getHolidayName } from "@/lib/holidays";
-import { useUserRegion } from "@/hooks/useUserRegion";
 
 interface WeekCardProps {
   day: {
@@ -46,8 +45,7 @@ export function WeekCard({
   const [priority, setPriority] =
     useState<"alta" | "media" | "baixa">("media");
 
-  const { uf } = useUserRegion();
-  const holiday = getHolidayName(day.date, uf);
+  const holiday = getHolidayName(day.date);
 
   const completedCount = day.tasks.filter(
     (t) => t.completed

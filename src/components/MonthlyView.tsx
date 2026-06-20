@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { getHolidayName } from "@/lib/holidays";
-import { useUserRegion } from "@/hooks/useUserRegion";
 
 function formatDateLocal(date: Date) {
   return `${date.getFullYear()}-${String(
@@ -37,7 +36,6 @@ export function MonthlyView({
 }: Props) {
   const [tooltip, setTooltip] = useState<{ date: string; rect: DOMRect } | null>(null);
   const hideRef = useRef<number | null>(null);
-  const { uf } = useUserRegion();
 
   const showTooltip = useCallback((date: string, rect: DOMRect) => {
     if (hideRef.current) {
@@ -172,7 +170,7 @@ export function MonthlyView({
 
           const status = getStatus(tasks);
           const isSelected = selectedDate === date;
-          const holiday = getHolidayName(date, uf);
+          const holiday = getHolidayName(date);
 
           return (
             <button
@@ -272,7 +270,6 @@ export function MonthlyView({
           <DayTooltip
             date={tooltip.date}
             rect={tooltip.rect}
-            uf={uf}
             tasks={calendarData[tooltip.date] || []}
             onMouseEnter={() => {
               if (hideRef.current) {
@@ -291,14 +288,12 @@ export function MonthlyView({
 function DayTooltip({
   date,
   rect,
-  uf,
   tasks,
   onMouseEnter,
   onMouseLeave,
 }: {
   date: string;
   rect: DOMRect;
-  uf?: string;
   tasks: Task[];
   onMouseEnter: () => void;
   onMouseLeave: () => void;
@@ -306,7 +301,7 @@ function DayTooltip({
   const pendingTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
   const completed = completedTasks.length;
-  const holiday = getHolidayName(date, uf);
+  const holiday = getHolidayName(date);
   const cardWidth = 320;
   const gap = 8;
 
