@@ -13,7 +13,7 @@ type ActionButtonProps = ButtonHTMLAttributes<HTMLButtonElement> & {
 /** Um só contorno: hairline interno + sombra — sem border CSS (evita “dupla moldura”). */
 const variantClass: Record<ActionButtonVariant, string> = {
   primary:
-    "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.28),inset_0_-12px_20px_rgba(127,29,29,0.4),0_4px_14px_-4px_rgba(0,0,0,0.45),0_0_26px_-1px_rgba(239,68,68,0.5)]",
+    "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.4)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.1),inset_0_1px_0_rgba(255,255,255,0.28),inset_0_-12px_20px_hsl(var(--primary)_/_0.4),0_4px_14px_-4px_rgba(0,0,0,0.45),0_0_26px_-1px_hsl(var(--primary)_/_0.55)]",
   secondary:
     "text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.45)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08),inset_0_1px_0_rgba(255,255,255,0.18),inset_0_-10px_18px_rgba(0,0,0,0.35),0_4px_14px_-4px_rgba(0,0,0,0.5)]",
   accent:
@@ -22,7 +22,7 @@ const variantClass: Record<ActionButtonVariant, string> = {
 
 const tintClass: Record<ActionButtonVariant, string> = {
   primary:
-    "bg-gradient-to-b from-white/15 via-red-500/20 to-red-950/38 group-hover:from-white/18 group-hover:via-red-500/24 group-hover:to-red-950/42",
+    "bg-gradient-to-b from-white/15 via-[hsl(var(--primary)_/_0.22)] to-[hsl(var(--primary)_/_0.5)] group-hover:from-white/18 group-hover:via-[hsl(var(--primary)_/_0.28)] group-hover:to-[hsl(var(--primary)_/_0.55)]",
   secondary:
     "bg-gradient-to-b from-white/12 via-white/5 to-zinc-950/42 group-hover:from-white/15 group-hover:via-white/7 group-hover:to-zinc-950/48",
   accent:

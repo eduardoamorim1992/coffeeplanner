@@ -337,7 +337,7 @@ export default function DivisionPage() {
 
   const tabActive = (active: boolean) =>
     active
-      ? "border-transparent text-white bg-gradient-to-b from-red-400 via-red-500 to-red-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-10px_16px_rgba(127,29,29,0.55),0_0_0_1px_rgba(248,113,113,0.35),0_0_24px_1px_rgba(239,68,68,0.6),0_6px_18px_-6px_rgba(0,0,0,0.55)]"
+      ? "border-transparent text-primary-foreground bg-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-12px_18px_rgba(0,0,0,0.3),0_0_22px_1px_hsl(var(--primary)_/_0.6),0_6px_18px_-6px_rgba(0,0,0,0.5)]"
       : "border-border bg-card/90 text-foreground backdrop-blur-sm hover:border-primary/20 hover:bg-muted/80 dark:border-zinc-700/80 dark:bg-zinc-900/70 dark:text-zinc-200 dark:hover:border-zinc-500/80 dark:hover:bg-zinc-800/80";
 
   const tabDesktop = (active: boolean) =>

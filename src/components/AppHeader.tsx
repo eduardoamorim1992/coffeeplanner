@@ -1,4 +1,5 @@
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { AccentThemePicker } from "@/components/AccentThemePicker";
 import { TutorialHelpButton } from "@/components/TutorialHelp";
 
 interface AppHeaderProps {
@@ -40,6 +41,8 @@ export function AppHeader({ divisionName }: AppHeaderProps) {
         </div>
 
         <TutorialHelpButton collapsedLabel />
+
+        <AccentThemePicker />
 
         <ThemeToggle />
 

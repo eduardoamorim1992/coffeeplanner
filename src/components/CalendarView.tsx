@@ -63,7 +63,7 @@ export function CalendarView({
             onClick={() => setCalendarMode("month")}
             className={`flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:min-h-[44px] sm:flex-none sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm ${
               calendarMode === "month"
-                ? "border-transparent text-white bg-gradient-to-b from-red-400 via-red-500 to-red-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-10px_16px_rgba(127,29,29,0.55),0_0_0_1px_rgba(248,113,113,0.35),0_0_24px_1px_rgba(239,68,68,0.6),0_6px_18px_-6px_rgba(0,0,0,0.55)]"
+                ? "border-transparent text-primary-foreground bg-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-12px_18px_rgba(0,0,0,0.3),0_0_22px_1px_hsl(var(--primary)_/_0.6),0_6px_18px_-6px_rgba(0,0,0,0.5)]"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
             }`}
           >
@@ -75,7 +75,7 @@ export function CalendarView({
             onClick={() => setCalendarMode("week")}
             className={`flex min-h-[40px] flex-1 items-center justify-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all duration-200 sm:min-h-[44px] sm:flex-none sm:rounded-xl sm:px-5 sm:py-2 sm:text-sm ${
               calendarMode === "week"
-                ? "border-transparent text-white bg-gradient-to-b from-red-400 via-red-500 to-red-700 shadow-[inset_0_1px_0_rgba(255,255,255,0.55),inset_0_-10px_16px_rgba(127,29,29,0.55),0_0_0_1px_rgba(248,113,113,0.35),0_0_24px_1px_rgba(239,68,68,0.6),0_6px_18px_-6px_rgba(0,0,0,0.55)]"
+                ? "border-transparent text-primary-foreground bg-primary shadow-[inset_0_1px_0_rgba(255,255,255,0.5),inset_0_-12px_18px_rgba(0,0,0,0.3),0_0_22px_1px_hsl(var(--primary)_/_0.6),0_6px_18px_-6px_rgba(0,0,0,0.5)]"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground dark:text-zinc-300 dark:hover:bg-zinc-800/70 dark:hover:text-white"
             }`}
           >

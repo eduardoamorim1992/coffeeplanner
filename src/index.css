@@ -108,6 +108,75 @@
     --sidebar-ring: 0 72% 51%;
   }
 
+  /* ========================= */
+  /* 🎨 TEMAS DE COR (accent)  */
+  /* O padrão (crimson) usa os valores acima. Cada tema só troca a cor primária. */
+  /* ========================= */
+  [data-accent="ocean"] {
+    --primary: 214 84% 46%;
+    --ring: 214 84% 46%;
+    --sidebar-primary: 214 84% 46%;
+    --sidebar-ring: 214 84% 46%;
+  }
+  .dark[data-accent="ocean"] {
+    --primary: 213 90% 60%;
+    --ring: 213 90% 60%;
+    --sidebar-primary: 213 90% 60%;
+    --sidebar-ring: 213 90% 60%;
+  }
+
+  [data-accent="emerald"] {
+    --primary: 160 84% 30%;
+    --ring: 160 84% 30%;
+    --sidebar-primary: 160 84% 30%;
+    --sidebar-ring: 160 84% 30%;
+  }
+  .dark[data-accent="emerald"] {
+    --primary: 155 70% 43%;
+    --ring: 155 70% 43%;
+    --sidebar-primary: 155 70% 43%;
+    --sidebar-ring: 155 70% 43%;
+  }
+
+  [data-accent="violet"] {
+    --primary: 262 68% 52%;
+    --ring: 262 68% 52%;
+    --sidebar-primary: 262 68% 52%;
+    --sidebar-ring: 262 68% 52%;
+  }
+  .dark[data-accent="violet"] {
+    --primary: 260 85% 67%;
+    --ring: 260 85% 67%;
+    --sidebar-primary: 260 85% 67%;
+    --sidebar-ring: 260 85% 67%;
+  }
+
+  [data-accent="amber"] {
+    --primary: 30 92% 44%;
+    --ring: 30 92% 44%;
+    --sidebar-primary: 30 92% 44%;
+    --sidebar-ring: 30 92% 44%;
+  }
+  .dark[data-accent="amber"] {
+    --primary: 33 94% 54%;
+    --ring: 33 94% 54%;
+    --sidebar-primary: 33 94% 54%;
+    --sidebar-ring: 33 94% 54%;
+  }
+
+  [data-accent="graphite"] {
+    --primary: 220 14% 32%;
+    --ring: 220 14% 32%;
+    --sidebar-primary: 220 14% 32%;
+    --sidebar-ring: 220 14% 32%;
+  }
+  .dark[data-accent="graphite"] {
+    --primary: 220 12% 60%;
+    --ring: 220 12% 60%;
+    --sidebar-primary: 220 12% 60%;
+    --sidebar-ring: 220 12% 60%;
+  }
+
   html {
     -webkit-tap-highlight-color: transparent;
   }
