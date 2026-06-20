@@ -257,33 +257,7 @@
       var(--delay, 0s) infinite;
   }
 
-  @media (prefers-reduced-motion: reduce) {
-    .login-bg-orb-a,
-    .login-bg-orb-b,
-    .login-bg-orb-c {
-      animation: none;
-    }
-    .login-mouse-follow {
-      opacity: 0.55;
-    }
-    .login-smoke {
-      animation: none;
-      opacity: 0.45;
-      transform: translateY(-4px);
-    }
-    .login-card-enter,
-    .login-card-shine,
-    .login-particle {
-      animation: none;
-    }
-    .login-card-shine,
-    .login-particle {
-      opacity: 0;
-    }
-    .login-card-tilt {
-      transition: none;
-    }
-  }
+  /* Animações do login sempre ativas (app pessoal — efeito desejado em todos os dispositivos). */
 }
 
 @keyframes login-smoke-rise {

@@ -13,7 +13,6 @@ export function LoginCardFx({ children }: { children: ReactNode }) {
   useEffect(() => {
     const card = cardRef.current;
     if (!card) return;
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
     let raf = 0;
     const clamp = (v: number) => Math.max(-1, Math.min(1, v));
