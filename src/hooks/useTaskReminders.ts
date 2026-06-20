@@ -123,6 +123,58 @@ export function useTaskReminders() {
 
       if (error || !tasks || cancelled) return;
 
+      // Briefing do dia — 1x por dia, no primeiro acesso.
+      const briefKey = `briefing:${iso}`;
+      if (!localStorage.getItem(briefKey)) {
+        localStorage.setItem(briefKey, "1");
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith("briefing:") && k !== briefKey) {
+            localStorage.removeItem(k);
+          }
+        }
+        const pend = tasks as { titulo: string; hora: string | null }[];
+        if (pend.length > 0) {
+          const comTempo = pend
+            .filter((t) => parseHora(t.hora) != null)
+            .sort(
+              (a, b) =>
+                (parseHora(a.hora) as number) - (parseHora(b.hora) as number)
+            );
+          const prox = comTempo[0];
+          const proxTxt = prox
+            ? `Próximo: ${prox.hora} — ${(prox.titulo || "").replace(
+                /^\[(Outlook|ICS)\]\s*/,
+                ""
+              )}`
+            : "Tenha um ótimo dia!";
+          const titulo = `📅 Você tem ${pend.length} compromisso${
+            pend.length > 1 ? "s" : ""
+          } hoje`;
+          try {
+            if (
+              "Notification" in window &&
+              Notification.permission === "granted"
+            ) {
+              const n = new Notification(titulo, { body: proxTxt, silent: true });
+              n.onclick = () => {
+                window.focus();
+                n.close();
+              };
+            }
+          } catch {
+            /* ignore */
+          }
+          notify({
+            title: titulo,
+            description: proxTxt,
+            variant: "info",
+            playSound: false,
+          });
+          playNotificationChime();
+        }
+      }
+
       const reminded = getReminded(iso);
       const now = nowMinutes();
       let changed = false;
