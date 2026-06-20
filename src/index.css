@@ -510,3 +510,17 @@ body {
 *::-webkit-scrollbar-thumb:hover {
   background-color: hsl(var(--muted-foreground) / 0.5);
 }
+
+/* Controles nativos seguem o tema (dropdown do <select>, hora, date pickers) */
+:root {
+  color-scheme: light;
+}
+.dark {
+  color-scheme: dark;
+}
+
+/* Opções do <select> nítidas na lista que o navegador abre */
+select option {
+  background-color: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+}
