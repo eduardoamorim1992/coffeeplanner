@@ -357,7 +357,7 @@ export default function DivisionPage() {
           <MotivationalBar />
 
           {/* Abas no desktop / tablet */}
-          <div className="hidden md:flex flex-wrap gap-3 rounded-2xl border border-border bg-card/70 p-2 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_12px_30px_-16px_rgba(0,0,0,0.35)] dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_14px_34px_-18px_rgba(0,0,0,0.8)]">
+          <div className="hidden md:flex w-fit flex-wrap gap-2 rounded-2xl border border-border bg-card/70 p-1.5 backdrop-blur-xl shadow-[inset_0_1px_0_rgba(255,255,255,0.5),0_12px_30px_-16px_rgba(0,0,0,0.35)] dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_14px_34px_-18px_rgba(0,0,0,0.8)]">
             <button
               type="button"
               onClick={() => setView("calendar")}

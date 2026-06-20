@@ -78,7 +78,7 @@ export function MiniDayTaskList({
   }
 
   return (
-    <div className="flex max-h-[min(58vh,480px)] min-h-[140px] flex-col rounded-lg border border-border bg-card/95 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-none sm:min-h-[160px] sm:max-h-[min(65vh,500px)] sm:rounded-xl md:min-h-[180px] md:max-h-[min(70vh,520px)] lg:sticky lg:top-4">
+    <div className="flex max-h-[min(58vh,480px)] min-h-[140px] flex-col rounded-xl border border-border bg-card/95 shadow-sm backdrop-blur-sm dark:border-zinc-800/80 dark:bg-zinc-950/60 dark:shadow-none sm:min-h-[160px] sm:max-h-[min(65vh,500px)] sm:rounded-2xl md:min-h-[180px] md:max-h-[min(70vh,520px)] lg:sticky lg:top-4">
       <div className="shrink-0 space-y-0.5 border-b border-border px-2.5 py-2 dark:border-zinc-800/80 sm:space-y-1 sm:px-3 sm:py-3 md:px-4">
         <div className="flex items-start justify-between gap-1.5 sm:gap-2">
           <div className="min-w-0">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Quote } from "lucide-react";
 
 const frases = [
   { text: "Você não sobe ao nível das suas metas, você cai ao nível dos seus sistemas.", author: "James Clear" },
@@ -43,22 +44,20 @@ export function MotivationalBar() {
   const fraseAtual = frases[index];
 
   return (
-    <div className="relative overflow-hidden rounded-lg border border-border bg-gradient-to-r from-card via-muted/40 to-accent/30 px-2.5 py-2 shadow-sm sm:rounded-xl sm:px-4 sm:py-2.5 dark:from-zinc-900 dark:via-zinc-900 dark:to-zinc-800 dark:shadow-none">
-
+    <div className="relative overflow-hidden rounded-xl bg-muted/30 px-3 py-2 dark:bg-zinc-900/50">
       <div
-        className={`transition-opacity duration-300 ${
+        className={`flex items-start gap-2 transition-opacity duration-300 ${
           fade ? "opacity-100" : "opacity-0"
         }`}
       >
-        <p className="text-center text-[11px] font-medium leading-snug text-foreground sm:text-xs md:text-sm dark:text-white">
-          "{fraseAtual.text}"
-        </p>
-
-        <p className="mt-1 text-center text-[9px] italic text-muted-foreground sm:text-[10px] md:text-[11px] dark:text-zinc-400">
-          — {fraseAtual.author}
+        <Quote className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/60" aria-hidden />
+        <p className="text-xs leading-snug text-foreground/85 sm:text-[13px] dark:text-zinc-300">
+          <span className="font-medium">{fraseAtual.text}</span>
+          <span className="ml-1.5 italic text-muted-foreground">
+            — {fraseAtual.author}
+          </span>
         </p>
       </div>
-
     </div>
   );
 }
