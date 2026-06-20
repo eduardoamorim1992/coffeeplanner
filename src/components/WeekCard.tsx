@@ -23,7 +23,8 @@ interface WeekCardProps {
   onAddTask: (
     title: string,
     priority: "alta" | "media" | "baixa",
-    time: string
+    time: string,
+    repeat: "none" | "daily" | "weekly" | "monthly"
   ) => void;
   onReplicateTask: (task: any) => void;
   onEditTask: (task: any) => void;
@@ -44,6 +45,8 @@ export function WeekCard({
   const [taskTime, setTaskTime] = useState("");
   const [priority, setPriority] =
     useState<"alta" | "media" | "baixa">("media");
+  const [repeat, setRepeat] =
+    useState<"none" | "daily" | "weekly" | "monthly">("none");
 
   const holiday = getHolidayName(day.date);
 
@@ -254,15 +257,31 @@ export function WeekCard({
             <option value="baixa">Baixa prioridade</option>
           </select>
 
+          <select
+            value={repeat}
+            onChange={(e) =>
+              setRepeat(
+                e.target.value as "none" | "daily" | "weekly" | "monthly"
+              )
+            }
+            className="text-[11px] px-2 py-0.5 rounded bg-muted/30 border border-border"
+          >
+            <option value="none">Não repetir</option>
+            <option value="daily">Repetir todo dia (2 semanas)</option>
+            <option value="weekly">Repetir toda semana (8x)</option>
+            <option value="monthly">Repetir todo mês (6x)</option>
+          </select>
+
           <ActionButton
             onClick={() => {
 
               if (!newTask.trim()) return;
 
-              onAddTask(newTask, priority, taskTime);
+              onAddTask(newTask, priority, taskTime, repeat);
 
               setNewTask("");
               setTaskTime("");
+              setRepeat("none");
 
             }}
             variant="primary"

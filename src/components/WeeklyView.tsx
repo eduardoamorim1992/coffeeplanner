@@ -104,11 +104,36 @@ export function WeeklyView({
     return "media";
   }
 
+  function buildRecurringDates(
+    startIso: string,
+    repeat: "none" | "daily" | "weekly" | "monthly"
+  ): string[] {
+    const [y, m, d] = startIso.split("-").map(Number);
+    const base = new Date(y, m - 1, d);
+    const fmt = (dt: Date) =>
+      `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(
+        dt.getDate()
+      ).padStart(2, "0")}`;
+    const out = [startIso];
+    const push = (count: number, step: (dt: Date, i: number) => void) => {
+      for (let i = 1; i <= count; i++) {
+        const dt = new Date(base);
+        step(dt, i);
+        out.push(fmt(dt));
+      }
+    };
+    if (repeat === "daily") push(13, (dt, i) => dt.setDate(dt.getDate() + i));
+    else if (repeat === "weekly") push(7, (dt, i) => dt.setDate(dt.getDate() + 7 * i));
+    else if (repeat === "monthly") push(5, (dt, i) => dt.setMonth(dt.getMonth() + i));
+    return out;
+  }
+
   async function addTask(
     dayDate: string,
     title: string,
     priority: any,
-    time: string
+    time: string,
+    repeat: "none" | "daily" | "weekly" | "monthly" = "none"
   ) {
 
     if (!title) {
@@ -128,18 +153,19 @@ export function WeeklyView({
 
     const safePriority = normalizePriority(priority);
 
+    const rows = buildRecurringDates(dayDate, repeat).map((d) => ({
+      user_id: userId,
+      data: d,
+      hora: safeTime,
+      titulo: title,
+      prioridade: safePriority,
+      completed: false,
+    }));
+
     const { data, error } = await supabase
       .from("atividades")
-      .insert({
-        user_id: userId,
-        data: dayDate,
-        hora: safeTime,
-        titulo: title,
-        prioridade: safePriority,
-        completed: false,
-      })
-      .select()
-      .single();
+      .insert(rows)
+      .select();
 
     if (error) {
       console.error("ERRO:", error);
@@ -147,19 +173,22 @@ export function WeeklyView({
       return;
     }
 
-    setCalendarData((prev) => ({
-      ...prev,
-      [dayDate]: sortDayTasks([
-        ...(prev[dayDate] || []),
-        {
-          id: data.id,
-          title: data.titulo,
-          time: data.hora ? data.hora.slice(0, 5) : null, // 🔥 SEM SEGUNDOS
-          completed: data.completed,
-          priority: data.prioridade,
-        },
-      ]),
-    }));
+    setCalendarData((prev) => {
+      const next = { ...prev };
+      for (const r of data || []) {
+        next[r.data] = sortDayTasks([
+          ...(next[r.data] || []),
+          {
+            id: r.id,
+            title: r.titulo,
+            time: r.hora ? r.hora.slice(0, 5) : null, // 🔥 SEM SEGUNDOS
+            completed: r.completed,
+            priority: r.prioridade,
+          },
+        ]);
+      }
+      return next;
+    });
   }
 
   async function editTask(dayDate: string, task: CalendarTask) {
@@ -387,7 +416,9 @@ export function WeeklyView({
             index={i}
             onToggleTask={(id) => toggleTask(day.date, id)}
             onDeleteTask={(id) => deleteTask(day.date, id)}
-            onAddTask={(t, p, time) => addTask(day.date, t, p, time)}
+            onAddTask={(t, p, time, repeat) =>
+              addTask(day.date, t, p, time, repeat)
+            }
             onReplicateTask={(task) =>
               setReplicateTarget({ task, sourceDate: day.date })
             }
