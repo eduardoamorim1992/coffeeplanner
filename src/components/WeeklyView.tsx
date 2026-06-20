@@ -26,6 +26,17 @@ function formatDateBR(dateString: string) {
   return `${day}/${month}/${year}`;
 }
 
+/** Número da semana no ano (ISO 8601, 1–53). */
+function getISOWeek(date: Date): number {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+  );
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
 interface Props {
   calendarData: Record<string, CalendarTask[]>;
   setCalendarData: React.Dispatch<
@@ -391,7 +402,9 @@ export function WeeklyView({
         </ActionButton>
 
         <p className="min-w-0 flex-1 px-1 text-center text-[11px] font-semibold leading-tight text-foreground sm:text-sm">
-          <span className="text-muted-foreground">Semana: </span>
+          <span className="text-muted-foreground">
+            Semana {getISOWeek(parseLocalDate(week[0].date))}:{" "}
+          </span>
           <span className="tabular-nums">
             {week[0].displayDate} – {week[6].displayDate}
           </span>

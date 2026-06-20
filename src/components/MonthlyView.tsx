@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from "react";
+import { Fragment, useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { getHolidayName } from "@/lib/holidays";
 
@@ -6,6 +6,17 @@ function formatDateLocal(date: Date) {
   return `${date.getFullYear()}-${String(
     date.getMonth() + 1
   ).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+}
+
+/** Número da semana no ano (ISO 8601, 1–53). */
+function getISOWeek(date: Date): number {
+  const d = new Date(
+    Date.UTC(date.getFullYear(), date.getMonth(), date.getDate())
+  );
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
 }
 
 interface Task {
@@ -132,7 +143,8 @@ export function MonthlyView({
       </div>
 
       {/* DIAS DA SEMANA */}
-      <div className="grid grid-cols-7 gap-0.5 sm:gap-1.5 text-center text-[10px] sm:text-xs text-muted-foreground px-0">
+      <div className="grid grid-cols-[1.75rem_repeat(7,minmax(0,1fr))] gap-0.5 sm:gap-1.5 text-center text-[10px] sm:text-xs text-muted-foreground px-0">
+        <div className="font-medium opacity-50" title="Número da semana">#</div>
         {weekLong.map((day, i) => (
           <div key={day} className="truncate font-medium">
             <span className="sm:hidden">{weekShort[i]}</span>
@@ -142,12 +154,32 @@ export function MonthlyView({
       </div>
 
       {/* GRID */}
-      <div className="grid flex-1 grid-cols-7 gap-px overflow-visible px-0 sm:gap-0.5 md:gap-1.5">
+      <div className="grid flex-1 grid-cols-[1.75rem_repeat(7,minmax(0,1fr))] gap-px overflow-visible px-0 sm:gap-0.5 md:gap-1.5">
 
         {days.map((date, index) => {
 
+          const isWeekStart = index % 7 === 0;
+          const rowIndex = Math.floor(index / 7);
+          const weekNumber = getISOWeek(
+            new Date(currentYear, currentMonth, 1 - startWeekDay + rowIndex * 7 + 4)
+          );
+          const weekCell = isWeekStart ? (
+            <div
+              key={`w-${rowIndex}`}
+              className="flex items-center justify-center text-[9px] font-semibold tabular-nums text-muted-foreground/70 sm:text-[10px]"
+              title={`Semana ${weekNumber}`}
+            >
+              {weekNumber}
+            </div>
+          ) : null;
+
           if (!date) {
-            return <div key={index} className="min-h-[2.875rem] sm:min-h-[3.5rem] md:min-h-[5rem]" />;
+            return (
+              <Fragment key={index}>
+                {weekCell}
+                <div className="min-h-[2.875rem] sm:min-h-[3.5rem] md:min-h-[5rem]" />
+              </Fragment>
+            );
           }
 
           const tasks = calendarData[date] || [];
@@ -173,9 +205,10 @@ export function MonthlyView({
           const holiday = getHolidayName(date);
 
           return (
+            <Fragment key={index}>
+              {weekCell}
             <button
               type="button"
-              key={index}
               onClick={() => onSelectDate(date)}
               onMouseEnter={(e) => (tasks.length > 0 || holiday) && showTooltip(date, e.currentTarget.getBoundingClientRect())}
               onMouseLeave={hideTooltip}
@@ -260,6 +293,7 @@ export function MonthlyView({
               </div>
 
             </button>
+            </Fragment>
           );
         })}
       </div>
