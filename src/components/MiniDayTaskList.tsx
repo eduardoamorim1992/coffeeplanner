@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { CheckCircle2, Circle } from "lucide-react";
+import { getHolidayName } from "@/lib/holidays";
 import {
   sortDayTasks,
   toggleCalendarDayTask,
@@ -64,6 +65,7 @@ export function MiniDayTaskList({
   const tasks = sortDayTasks(calendarData[isoDate] || []);
   const done = tasks.filter((t) => t.completed).length;
   const total = tasks.length;
+  const holiday = getHolidayName(isoDate);
 
   async function onToggle(taskId: string) {
     if (busyId) return;
@@ -92,6 +94,14 @@ export function MiniDayTaskList({
             <p className="hidden truncate text-sm font-semibold capitalize leading-snug text-foreground sm:block dark:text-zinc-100">
               {longLabel}
             </p>
+            {holiday && (
+              <p
+                className="mt-0.5 truncate text-[10px] font-semibold text-amber-600 dark:text-amber-400"
+                title={holiday}
+              >
+                Feriado · {holiday}
+              </p>
+            )}
           </div>
           {isToday ? (
             <span className="shrink-0 rounded-full bg-primary/20 px-1.5 py-0.5 text-[9px] font-semibold text-primary sm:px-2 sm:text-[10px]">

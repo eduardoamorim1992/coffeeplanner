@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
+import { getHolidayName } from "@/lib/holidays";
 
 function formatDateLocal(date: Date) {
   return `${date.getFullYear()}-${String(
@@ -169,13 +170,14 @@ export function MonthlyView({
 
           const status = getStatus(tasks);
           const isSelected = selectedDate === date;
+          const holiday = getHolidayName(date);
 
           return (
             <button
               type="button"
               key={index}
               onClick={() => onSelectDate(date)}
-              onMouseEnter={(e) => tasks.length > 0 && showTooltip(date, e.currentTarget.getBoundingClientRect())}
+              onMouseEnter={(e) => (tasks.length > 0 || holiday) && showTooltip(date, e.currentTarget.getBoundingClientRect())}
               onMouseLeave={hideTooltip}
               className={`
                 group relative min-h-[2.875rem] cursor-pointer rounded border p-0.5 text-left transition-all active:scale-[0.98] touch-manipulation sm:min-h-[3.5rem] sm:rounded-md sm:p-1 md:min-h-[5rem] md:rounded-lg md:p-1.5
@@ -183,7 +185,8 @@ export function MonthlyView({
                 ${status === "done" && "bg-green-500/20 border-green-500"}
                 ${status === "pending" && high > 0 && "bg-red-500/10 border-red-500"}
                 ${status === "mixed" && "bg-yellow-500/10 border-yellow-500"}
-                ${status === "empty" && !isSelected && "border-border bg-muted/25 dark:border-zinc-700/80 dark:bg-zinc-900/20"}
+                ${status === "empty" && !isSelected && !holiday && "border-border bg-muted/25 dark:border-zinc-700/80 dark:bg-zinc-900/20"}
+                ${status === "empty" && !isSelected && holiday && "border-amber-500/50 bg-amber-500/10"}
 
                 ${isSelected ? "ring-2 ring-primary ring-offset-2 ring-offset-background z-10" : ""}
 
@@ -191,7 +194,11 @@ export function MonthlyView({
               `}
             >
               <div className="flex justify-between items-start gap-0.5">
-                <span className="text-xs sm:text-sm font-semibold tabular-nums">
+                <span
+                  className={`text-xs sm:text-sm font-semibold tabular-nums ${
+                    holiday ? "text-amber-600 dark:text-amber-400" : ""
+                  }`}
+                >
                   {Number(date.split("-")[2])}
                 </span>
 
@@ -241,6 +248,15 @@ export function MonthlyView({
                   </div>
                 )}
 
+                {holiday && (
+                  <div
+                    className="hidden truncate text-[9px] font-medium leading-tight text-amber-600 dark:text-amber-400 sm:block"
+                    title={holiday}
+                  >
+                    {holiday}
+                  </div>
+                )}
+
               </div>
 
             </button>
@@ -285,6 +301,7 @@ function DayTooltip({
   const pendingTasks = tasks.filter((t) => !t.completed);
   const completedTasks = tasks.filter((t) => t.completed);
   const completed = completedTasks.length;
+  const holiday = getHolidayName(date);
   const cardWidth = 320;
   const gap = 8;
 
@@ -310,6 +327,11 @@ function DayTooltip({
       onMouseLeave={onMouseLeave}
     >
       <div className="shrink-0 border-b border-border px-4 pb-2 pt-4 dark:border-zinc-700/80">
+        {holiday && (
+          <div className="mb-1 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+            Feriado · {holiday}
+          </div>
+        )}
         <span className="text-[11px] leading-relaxed text-muted-foreground">
           {completed}/{tasks.length} concluídas
         </span>
